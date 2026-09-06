@@ -78,14 +78,14 @@ jobs:
       - name: Upload test results
         # Uploaded even on failure: a red build is exactly when the detail is wanted.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: ArsenalCleanup/**/TestResults/**
           if-no-files-found: warn
 
       - name: Upload the built plugin
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ArsenalCleanup
           path: |
