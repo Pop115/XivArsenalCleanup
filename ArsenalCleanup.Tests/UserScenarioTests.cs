@@ -54,7 +54,7 @@ public sealed class UserScenarioTests
     }
 
     [Fact]
-    public void GearForEveryClass_IsNeverHeldBackByAClassTheePlayerHasNotStarted()
+    public void GearForEveryClass_IsNeverHeldBackByAClassThePlayerHasNotStarted()
     {
         // The reported bug: a level-1 item usable by all classes came out "keep until this job
         // reaches level 1" because untouched classes report level 0. Every class starts at 1 the
