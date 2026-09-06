@@ -155,10 +155,19 @@ rather than a hunt through the decision logic.
 
 ## Known limitations
 
-- The window covers the character currently logged in. There is no account-wide view.
-- Retainer and saddlebag inventories are not read.
-- Glamour plates and gear sets are not taken into account: a piece kept only for its appearance
-  reads as replaced. The Armoire suggestion exists partly for that reason.
+Each of these is tracked as an issue; the links are where to say it matters to you.
+
+- [Melded materia is invisible to the triage](https://github.com/Pop115/ClaudeGithubWorkspace/issues/5).
+  Desynthesising a melded piece destroys the materia, and the plugin does not yet know it is there.
+  **The one limitation that can cost you something.**
+- [Glamour plates and gearsets are not taken into account](https://github.com/Pop115/ClaudeGithubWorkspace/issues/6):
+  a piece kept only for its appearance reads as replaced. The Armoire suggestion exists partly for
+  that reason.
+- [The window does not notice when you act on its advice](https://github.com/Pop115/ClaudeGithubWorkspace/issues/7)
+  until you press Refresh.
+- [Retainer and saddlebag inventories are not read](https://github.com/Pop115/ClaudeGithubWorkspace/issues/9).
+- [The window covers whoever is logged in](https://github.com/Pop115/ClaudeGithubWorkspace/issues/10);
+  there is no account-wide view.
 
 ## Licence
 
