@@ -241,10 +241,10 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.Text(Presentation.DisposalLabel(piece.Disposal));
 
             ImGui.TableNextColumn();
-            ImGui.TextWrapped(piece.Reason);
-            if (piece.DecidingJobLevel is { } level && piece.DecidingJob is not null)
+            ImGui.TextWrapped(Presentation.Reason(piece, arsenal.Jobs));
+            if (piece.Jobs.Count > 0)
             {
-                ImGui.TextDisabled($"judged on a job at level {level}");
+                ImGui.TextDisabled($"usable by {Presentation.JobList(piece.Jobs, arsenal.Jobs)}");
             }
         }
     }

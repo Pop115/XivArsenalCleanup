@@ -146,6 +146,13 @@ A relic is recognised by its description opening with a bracketed tag — `[Mand
 The obvious alternatives are worse: "unique" and "untradable" are true of nearly all endgame gear
 and would protect everything, drowning the result rather than guarding anything.
 
+## Language
+
+Item names and class abbreviations follow your game client: on a French client the plugin says DNS
+for Dancer and SAG for Sage, because that is what the rest of your game says. The plugin's own
+wording is English for now — all of it lives in one file, so translating it is a contained job
+rather than a hunt through the decision logic.
+
 ## Known limitations
 
 - The window covers the character currently logged in. There is no account-wide view.

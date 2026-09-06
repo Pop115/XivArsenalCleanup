@@ -21,12 +21,15 @@ namespace ArsenalCleanup.GameData;
 public sealed class GameItemFacts
 {
     private readonly IDataManager data;
+    private readonly JobDirectory jobs;
     private readonly Dictionary<uint, GearFacts?> cache = [];
+    private readonly Dictionary<uint, List<uint>> jobsByCategory = [];
     private readonly HashSet<uint> armoireEligible;
 
-    public GameItemFacts(IDataManager data)
+    public GameItemFacts(IDataManager data, JobDirectory jobs)
     {
         this.data = data;
+        this.jobs = jobs;
 
         // The Cabinet sheet is the game's own list of what the Armoire can store permanently. It is
         // small (a few thousand rows) and never changes at runtime, so it is read once.
@@ -80,25 +83,29 @@ public sealed class GameItemFacts
     /// <summary>
     /// Every ClassJob row id allowed to equip this item.
     ///
-    /// ClassJobCategory carries one boolean column per job abbreviation, so the job rows are walked
-    /// and each is asked whether its own abbreviation is set — which keeps this correct when a new
-    /// job is added to the game, unlike a hand-maintained list of column names.
+    /// ClassJobCategory carries one boolean column per class, named after its *English*
+    /// abbreviation, so that is the name each class is looked up by — never the translated one the
+    /// player sees. Reading a column by a French abbreviation matches nothing, and an item usable by
+    /// half the game then looks usable by nobody.
+    ///
+    /// Cached per category row: an armoury of several hundred pieces draws on a few dozen distinct
+    /// categories, and walking every class for each piece would repeat the same answer hundreds of
+    /// times.
     /// </summary>
     private List<uint> JobIdsFor(Item item)
     {
         var category = item.ClassJobCategory.ValueNullable;
         if (category is null) return [];
 
-        var jobs = data.GetExcelSheet<ClassJob>();
-        if (jobs is null) return [];
+        if (jobsByCategory.TryGetValue(category.Value.RowId, out var cached)) return cached;
 
         var allowed = new List<uint>();
-        foreach (var job in jobs)
+        foreach (var job in jobs.Jobs)
         {
-            var abbreviation = job.Abbreviation.ExtractText();
-            if (abbreviation.Length == 0) continue;
-            if (ClassJobCategoryFlags.IsSet(category.Value, abbreviation)) allowed.Add(job.RowId);
+            if (ClassJobCategoryFlags.IsSet(category.Value, job.LookupAbbreviation)) allowed.Add(job.Id);
         }
+
+        jobsByCategory[category.Value.RowId] = allowed;
         return allowed;
     }
 }

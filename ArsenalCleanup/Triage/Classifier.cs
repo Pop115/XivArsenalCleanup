@@ -1,10 +1,45 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace ArsenalCleanup.Triage;
 
+/// <summary>
+/// Why a piece got the verdict it did.
+///
+/// A code rather than a sentence: the wording belongs to the presentation layer, which knows the
+/// player's language and which classes to name. Baking English prose in here made every reason read
+/// "this job" — true, unhelpful, and untranslatable.
+/// </summary>
+public enum ReasonCode
+{
+    /// <summary>Nothing else owned fills that slot for that job.</summary>
+    OnlyOneOwned,
+
+    /// <summary>Nothing owned beats it among what can be equipped now.</summary>
+    BestEquippable,
+
+    /// <summary>Better than what is usable today, but the job has not reached its level yet.</summary>
+    NotAtLevelYet,
+
+    /// <summary>Beaten by something already equippable.</summary>
+    SupersededNow,
+
+    /// <summary>Not usable yet, and something better unlocks no later.</summary>
+    OutclassedByEarlier,
+
+    /// <summary>The job's level could not be read, so nothing can be concluded.</summary>
+    JobLevelUnknown,
+
+    /// <summary>The game's item sheet has no such row.</summary>
+    ItemUnknown,
+
+    /// <summary>The item resolved to no class or job at all.</summary>
+    JobUnresolved,
+}
+
 /// <summary>One piece judged for one job that can use it.</summary>
-/// <param name="ReplacedBy">The piece that supersedes it — set only when the verdict is <see cref="Verdict.Obsolete"/>, or when a relic guard downgraded that verdict.</param>
+/// <param name="ReplacedBy">The piece that supersedes it — set only when superseded, including when a relic guard downgraded the verdict.</param>
 public sealed record JudgedPiece(
     OwnedPiece Piece,
     GearFacts Facts,
@@ -12,7 +47,7 @@ public sealed record JudgedPiece(
     int? JobLevel,
     Verdict Verdict,
     GearFacts? ReplacedBy,
-    string Reason,
+    ReasonCode Reason,
     DisposalMethod Disposal);
 
 /// <summary>
@@ -29,12 +64,25 @@ public sealed record JudgedPiece(
 /// hold yet — leaving them weaponless for 49 levels.
 ///
 /// Soul crystals are the caller's business: they are never gear to triage and should be filtered
-/// out before calling. Relics are this function's business — an obsolete verdict on one is always
-/// downgraded to <see cref="Verdict.NeedsReview"/>, with the full "replaced by" context kept so the
-/// player can still see *why* it would have gone.
+/// out before calling. Relics are this function's — an obsolete verdict on one is always downgraded
+/// to <see cref="Verdict.NeedsReview"/>, with the "replaced by" context kept so the player can still
+/// see why it would have gone.
 /// </summary>
 public static class Classifier
 {
+    /// <summary>
+    /// The level to judge a job at.
+    ///
+    /// A class the player has never touched reads as level 0, but every class in the game starts at
+    /// 1 the moment its weapon is equipped — so a level-0 reading means "not started", not "cannot
+    /// wear anything". Without this, every level-1 item usable by all classes came out as "keep
+    /// until this job reaches level 1", which is nonsense on its face and buried the real results.
+    ///
+    /// Jobs proper are unaffected: they unlock at level 30 and above, and their gear requires those
+    /// levels anyway, so treating an unstarted one as level 1 never makes their gear look wearable.
+    /// </summary>
+    public static int EffectiveLevel(int reportedLevel) => Math.Max(reportedLevel, 1);
+
     public static List<JudgedPiece> Classify(
         IReadOnlyList<OwnedPiece> pieces,
         IReadOnlyDictionary<uint, int> jobLevels)
@@ -53,9 +101,7 @@ public static class Classifier
         {
             if (group.Value.Count == 1)
             {
-                var only = group.Value[0];
-                results.Add(Judge(only, group.Key.JobId, jobLevels, Verdict.KeptOnly, null,
-                    "The only piece owned for this slot and job."));
+                results.Add(Judge(group.Value[0], group.Key.JobId, jobLevels, Verdict.KeptOnly, null, ReasonCode.OnlyOneOwned));
                 continue;
             }
 
@@ -94,12 +140,12 @@ public static class Classifier
     {
         var facts = piece.Facts!;
 
-        if (!jobLevels.TryGetValue(jobId, out var level))
+        if (!jobLevels.TryGetValue(jobId, out var reported))
         {
-            return Judge(piece, jobId, jobLevels, Verdict.NeedsReview, null,
-                "This job's level is unknown, so there is nothing to judge against.");
+            return Judge(piece, jobId, jobLevels, Verdict.NeedsReview, null, ReasonCode.JobLevelUnknown);
         }
 
+        var level = EffectiveLevel(reported);
         var others = group.Where(p => !ReferenceEquals(p, piece)).ToList();
 
         // Beaten by something strictly better that can be equipped right now.
@@ -107,8 +153,7 @@ public static class Classifier
             o.Facts!.ItemLevel > facts.ItemLevel && o.Facts.EquipLevel <= level));
         if (supersededNow is not null)
         {
-            return Judge(piece, jobId, jobLevels, Verdict.Obsolete, supersededNow,
-                $"Replaced by {supersededNow.Name} (item level {supersededNow.ItemLevel}), which is already equippable.");
+            return Judge(piece, jobId, jobLevels, Verdict.Obsolete, supersededNow, ReasonCode.SupersededNow);
         }
 
         if (facts.EquipLevel > level)
@@ -119,16 +164,13 @@ public static class Classifier
                 o.Facts!.ItemLevel > facts.ItemLevel && o.Facts.EquipLevel <= facts.EquipLevel));
             if (dominated is not null)
             {
-                return Judge(piece, jobId, jobLevels, Verdict.Obsolete, dominated,
-                    $"Outclassed by {dominated.Name}, which unlocks at least as early (level {dominated.EquipLevel}).");
+                return Judge(piece, jobId, jobLevels, Verdict.Obsolete, dominated, ReasonCode.OutclassedByEarlier);
             }
 
-            return Judge(piece, jobId, jobLevels, Verdict.KeptUntilLevel, null,
-                $"Keep until this job reaches level {facts.EquipLevel} (currently {level}).");
+            return Judge(piece, jobId, jobLevels, Verdict.KeptUntilLevel, null, ReasonCode.NotAtLevelYet);
         }
 
-        return Judge(piece, jobId, jobLevels, Verdict.KeptBest, null,
-            "The best piece currently equippable for this slot and job.");
+        return Judge(piece, jobId, jobLevels, Verdict.KeptBest, null, ReasonCode.BestEquippable);
     }
 
     /// <summary>
@@ -168,7 +210,7 @@ public static class Classifier
         IReadOnlyDictionary<uint, int> jobLevels,
         Verdict verdict,
         GearFacts? replacedBy,
-        string reason)
+        ReasonCode reason)
     {
         var facts = piece.Facts!;
 
@@ -181,10 +223,10 @@ public static class Classifier
             piece,
             facts,
             jobId,
-            jobLevels.TryGetValue(jobId, out var level) ? level : null,
+            jobLevels.TryGetValue(jobId, out var reported) ? EffectiveLevel(reported) : null,
             finalVerdict,
             replacedBy,
-            guarded ? $"{reason} Relic: never disposed of automatically — confirm first." : reason,
+            reason,
             finalVerdict == Verdict.Obsolete ? DisposalFor(facts) : DisposalMethod.None);
     }
 
@@ -205,14 +247,12 @@ public static class Classifier
         var facts = piece.Facts;
         return new JudgedPiece(
             piece,
-            facts ?? new GearFacts(piece.ItemId, $"Unknown item ({piece.ItemId})", piece.Slot, 0, 0, 0, [], false, false, false),
+            facts ?? new GearFacts(piece.ItemId, $"#{piece.ItemId}", piece.Slot, 0, 0, 0, [], false, false, false),
             JobId: 0,
             JobLevel: null,
             Verdict.NeedsReview,
             ReplacedBy: null,
-            facts is null
-                ? "This item is not in the game's item sheet — nothing is known about it."
-                : "No job can be resolved for this item, so there is nothing to compare it against.",
+            facts is null ? ReasonCode.ItemUnknown : ReasonCode.JobUnresolved,
             DisposalMethod.None);
     }
 }

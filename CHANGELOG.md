@@ -26,7 +26,28 @@ The plugin stands on its own.
 - A release workflow, and a Dalamud plugin repository manifest, so the plugin can be installed
   without building it.
 
+### Fixed
+
+- **Over half the game's classes were invisible on a non-English client.** Class abbreviations were
+  read in the player's language and then used to look up the game's ClassJobCategory columns, which
+  are named after the fixed English ones. On a French client 26 of the 43 differ — Dancer is DNS,
+  Sage is SAG, Monk is MOI — so those classes matched no column, owned no gear as far as the triage
+  was concerned, and their wardrobe was judged against a fraction of itself. Lookups now use the
+  English abbreviation; the player still reads their own.
+- **Gear for every class no longer waits on a class nobody has started.** A class never touched
+  reports level 0, so a level-1 item usable by all classes came out "keep until this job reaches
+  level 1". Every class starts at 1 the moment it is picked up, so an unstarted one is judged at 1.
+- **The same answer whatever order the inventory arrives in.** Where two classes reached the same
+  conclusion, which one was reported depended on read order; and two different items sharing a
+  display name could be folded into one row. Found by the property tests, not by a player.
+
 ### Changed
+
+- **Reasons name the classes they are about.** "Keep until this job reaches level 50" is accurate
+  and useless when nine classes can wear the piece; it now reads "Keep for PGL, MOI: wearable from
+  level 50, and none of them are there yet", collapsing to "every class" when it really is all of
+  them. Wording moved out of the decision logic into one presentation file, which is also what would
+  make translating the plugin a single-file job.
 
 - The replacement shown for a superseded piece is now the best candidate owned, not the first one
   found. The verdict never depended on this, but the name shown is what a player reads to decide.

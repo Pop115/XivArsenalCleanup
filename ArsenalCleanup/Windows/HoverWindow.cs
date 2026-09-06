@@ -93,7 +93,7 @@ public sealed class HoverWindow : Window, IDisposable
             }
 
             ImGui.PushTextWrapPos(ImGui.GetFontSize() * 22f);
-            ImGui.TextDisabled(piece.Reason);
+            ImGui.TextDisabled(Presentation.Reason(piece, arsenal.Jobs));
             ImGui.PopTextWrapPos();
 
             if (piece.Piece.IsEquipped && piece.Disposal != DisposalMethod.None)

@@ -22,7 +22,10 @@ public sealed class ArsenalService(
     IPlayerState playerState,
     IPluginLog log)
 {
-    private readonly GameItemFacts itemFacts = new(data);
+    private GameItemFacts? itemFacts;
+
+    /// <summary>The classes the game knows, needed to say which ones a verdict is about.</summary>
+    public JobDirectory Jobs { get; private set; } = JobDirectory.Empty;
 
     /// <summary>Raised after every refresh, successful or not, so anything displaying a count from
     /// <see cref="Current"/> updates with it instead of drifting.</summary>
@@ -49,8 +52,13 @@ public sealed class ArsenalService(
 
         try
         {
+            // Read once, then reused: the class list cannot change while the game is running, and
+            // building it walks two sheets.
+            if (Jobs.Count == 0) Jobs = GameJobs.Read(data);
+            itemFacts ??= new GameItemFacts(data, Jobs);
+
             var read = ArmoryReader.CollectPieces(inventory);
-            var jobLevels = GameJobLevels.Read(data, playerState);
+            var jobLevels = GameJobs.ReadLevels(playerState, data, Jobs);
 
             var owned = new List<OwnedPiece>(read.Count);
             foreach (var slotted in read)

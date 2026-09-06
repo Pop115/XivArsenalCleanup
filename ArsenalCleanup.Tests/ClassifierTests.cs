@@ -150,7 +150,7 @@ public sealed class ClassifierTests
         var row = Single(judged, "Manderville Fists");
         Assert.Equal(Verdict.NeedsReview, row.Verdict);
         Assert.Equal("Ordinary Fists", row.ReplacedBy?.Name);
-        Assert.Contains("Relic", row.Reason);
+        Assert.Equal(ReasonCode.SupersededNow, row.Reason);
         Assert.Equal(DisposalMethod.None, row.Disposal);
     }
 
@@ -183,7 +183,7 @@ public sealed class ClassifierTests
         var judged = Assert.Single(Classifier.Classify([Owned(jobless)], Levels((Pugilist, 50))));
 
         Assert.Equal(Verdict.NeedsReview, judged.Verdict);
-        Assert.Contains("job", judged.Reason, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ReasonCode.JobUnresolved, judged.Reason);
     }
 
     [Theory]
