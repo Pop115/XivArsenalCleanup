@@ -1,14 +1,15 @@
-using Dalamud.Configuration;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using Dalamud.Configuration;
 
 namespace ArsenalCleanup;
 
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 0;
+    /// <summary>Schema version of this file, bumped when a stored setting changes meaning.</summary>
+    public int Version { get; set; }
 
     /// <summary>
     /// Where exports are written, or empty to use the plugin's own config folder.

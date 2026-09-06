@@ -1,0 +1,26 @@
+<Project>
+
+  <!--
+    Quality gates that apply to every project here, so a contributor gets the same answer locally as
+    CI does. They are set in one place rather than per project precisely so the two cannot drift.
+  -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+
+    <!-- A warning nobody has to fix is a warning everybody learns to scroll past. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningLevel>9999</WarningLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- The built-in analysers, at the level that flags real defects rather than style opinions. -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+
+    <!-- Same inputs, same bytes out — so a build can be checked against its source. -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

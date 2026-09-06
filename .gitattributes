@@ -1,0 +1,15 @@
+# Normalise line endings in the repository, and check out CRLF for the C# sources so
+# `dotnet format --verify-no-changes` — which enforces the .editorconfig setting — agrees with what
+# is on disk, on every machine and on CI.
+* text=auto
+
+*.cs text eol=crlf
+*.csproj text eol=crlf
+*.props text eol=crlf
+*.targets text eol=crlf
+*.slnx text eol=crlf
+*.runsettings text eol=crlf
+
+*.md text eol=lf
+*.yml text eol=lf
+*.json text eol=lf

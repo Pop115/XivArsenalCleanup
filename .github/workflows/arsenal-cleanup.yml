@@ -1,0 +1,93 @@
+name: ArsenalCleanup
+
+# Runs on anything that touches the plugin. The path filter keeps unrelated work in this workspace
+# repo from queueing a Windows runner for no reason.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ArsenalCleanup/**'
+      - '.github/workflows/arsenal-cleanup.yml'
+  pull_request:
+    paths:
+      - 'ArsenalCleanup/**'
+      - '.github/workflows/arsenal-cleanup.yml'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ArsenalCleanup
+
+jobs:
+  build:
+    # Windows, because the plugin targets net10.0-windows: Dalamud plugins run in the game's own
+    # process, which is a Windows process.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Fetch Dalamud
+        # The plugin compiles against the assemblies Dalamud injects at runtime; they ship in the
+        # distribution rather than on NuGet, so CI unpacks them and points DALAMUD_HOME at the
+        # result — the same resolution order Dalamud.NET.Sdk and the test project both use.
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile dalamud.zip
+          Expand-Archive -Path dalamud.zip -DestinationPath "$env:RUNNER_TEMP/dalamud" -Force
+          "DALAMUD_HOME=$env:RUNNER_TEMP/dalamud" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Restore
+        run: dotnet restore ArsenalCleanup.slnx
+
+      - name: Check formatting
+        # Style is settled by .editorconfig and checked here, so it never has to be argued about in
+        # a review. `--no-restore` because the step above already did it.
+        run: dotnet format ArsenalCleanup.slnx --verify-no-changes --no-restore
+
+      - name: Build
+        # Warnings are errors (see Directory.Build.props), so this also gates the analysers.
+        run: dotnet build ArsenalCleanup.slnx --configuration Release --no-restore
+
+      - name: Test with coverage
+        run: >
+          dotnet test ArsenalCleanup.slnx --configuration Release --no-build
+          --settings coverlet.runsettings --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results.trx"
+
+      - name: Check coverage threshold
+        # The plugin's decision-making code is fully covered today. This guards that: the Dalamud
+        # adapters are marked ExcludeFromCodeCoverage precisely so this number stays meaningful.
+        shell: pwsh
+        run: |
+          $report = Get-ChildItem -Recurse -Filter coverage.cobertura.xml | Select-Object -Last 1
+          if (-not $report) { throw "No coverage report was produced." }
+          [xml]$xml = Get-Content $report.FullName
+          $lines = [double]$xml.coverage.'line-rate' * 100
+          $branches = [double]$xml.coverage.'branch-rate' * 100
+          Write-Host ("Coverage: {0:N1}% of lines, {1:N1}% of branches" -f $lines, $branches)
+          if ($lines -lt 90) { throw ("Line coverage fell to {0:N1}%, below the 90% floor." -f $lines) }
+          if ($branches -lt 85) { throw ("Branch coverage fell to {0:N1}%, below the 85% floor." -f $branches) }
+
+      - name: Upload test results
+        # Uploaded even on failure: a red build is exactly when the detail is wanted.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ArsenalCleanup/**/TestResults/**
+          if-no-files-found: warn
+
+      - name: Upload the built plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArsenalCleanup
+          path: |
+            ArsenalCleanup/ArsenalCleanup/bin/Release/ArsenalCleanup.dll
+            ArsenalCleanup/ArsenalCleanup/bin/Release/ArsenalCleanup.json
+          if-no-files-found: error

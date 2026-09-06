@@ -30,7 +30,8 @@ public class ConfigWindow : Window, IDisposable
         exportDirectoryBuffer = configuration.ExportDirectory;
     }
 
-    public void Dispose() { }
+    /// <summary>Nothing to release — the window holds no unmanaged handle and no subscription.</summary>
+    public void Dispose() => GC.SuppressFinalize(this);
 
     public override void Draw()
     {

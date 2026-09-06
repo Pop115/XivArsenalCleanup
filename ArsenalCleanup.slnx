@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ArsenalCleanup.Tests/ArsenalCleanup.Tests.csproj" />
+  <Project Path="ArsenalCleanup/ArsenalCleanup.csproj" />
+</Solution>

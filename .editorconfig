@@ -1,0 +1,66 @@
+# Formatting and code style for ArsenalCleanup. `dotnet format` and the IDE both read this, and CI
+# checks it, so "it looked fine on my machine" cannot become a review conversation.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,md}]
+indent_size = 2
+
+[*.{csproj,props,targets,runsettings}]
+indent_size = 2
+
+[*.md]
+# Two trailing spaces are a line break in Markdown; stripping them silently changes the text.
+trim_trailing_whitespace = false
+
+[*.cs]
+# Namespaces one per file, declared without an extra level of nesting.
+csharp_style_namespace_declarations = file_scoped:warning
+
+# `var` only where the type is already on the line — a reader should never have to guess.
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Modern, terser forms where they genuinely read better.
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+
+# Braces always, even for a one-line body: an added second line must not silently escape the block.
+csharp_prefer_braces = true:suggestion
+
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# Unused parameters are usually a leftover; a Dalamud command handler's are not, so this warns
+# rather than errors and is suppressed where the framework dictates the signature.
+dotnet_code_quality_unused_parameters = non_public:suggestion
+
+# Naming: interfaces start with I, types and members are PascalCase, locals camelCase.
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+dotnet_naming_rule.interfaces_start_with_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_with_i
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_style.prefix_with_i.required_prefix = I
+dotnet_naming_style.prefix_with_i.capitalization = pascal_case
+
+dotnet_naming_rule.types_are_pascal_case.severity = warning
+dotnet_naming_rule.types_are_pascal_case.symbols = type_symbols
+dotnet_naming_rule.types_are_pascal_case.style = pascal_case_style
+dotnet_naming_symbols.type_symbols.applicable_kinds = class,struct,enum,delegate
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+[ArsenalCleanup.Tests/**.cs]
+# A test's name is a sentence about behaviour, and underscores are what keep that sentence
+# readable — CA1707 exists for public API surface, which a test assembly is not.
+dotnet_diagnostic.CA1707.severity = none
