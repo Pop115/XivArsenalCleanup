@@ -22,7 +22,8 @@ namespace ArsenalCleanup.Tests;
 public sealed class PersonaScenarioTests
 {
     private const uint Gladiator = 1, Pugilist = 2, Archer = 5, Paladin = 19, Monk = 20, Bard = 23,
-                       Carpenter = 8, Culinarian = 15, Dancer = 38, Sage = 40;
+                       Carpenter = 8, Culinarian = 15, Dancer = 38, Sage = 40, Rogue = 29,
+                       Ninja = 30, Gunbreaker = 37, Viper = 41;
 
     /// <summary>A French client, because that is where the abbreviation bug lived.</summary>
     private static readonly JobDirectory FrenchClient = new([
@@ -34,8 +35,12 @@ public sealed class PersonaScenarioTests
         new JobInfo(Paladin, "PLD", "PLD", Gladiator),
         new JobInfo(Monk, "MNK", "MOI", Pugilist),
         new JobInfo(Bard, "BRD", "BRD", Archer),
-        new JobInfo(Dancer, "DNC", "DNS", Dancer),
-        new JobInfo(Sage, "SGE", "SAG", Sage),
+        new JobInfo(Dancer, "DNC", "DNS", Dancer, StartingLevel: 70),
+        new JobInfo(Sage, "SGE", "SAG", Sage, StartingLevel: 70),
+        new JobInfo(Rogue, "ROG", "SUR", Rogue),
+        new JobInfo(Ninja, "NIN", "NIN", Rogue),
+        new JobInfo(Gunbreaker, "GNB", "PSB", Gunbreaker, StartingLevel: 60),
+        new JobInfo(Viper, "VPR", "VPR", Viper, StartingLevel: 80),
     ]);
 
     private static GearFacts Item(
@@ -261,5 +266,47 @@ public sealed class PersonaScenarioTests
         // And the count the info bar would show matches what the window would list.
         Assert.Equal(result.Actionable.Count(), result.Pieces.Count(p =>
             p.Verdict is Verdict.Obsolete or Verdict.NeedsReview));
+    }
+    /// <summary>
+    /// **Pop, with a pair of level-1 gloves usable by every class.** "Gants d'Ehcatl" really are
+    /// item level 6, wearable from level 1, and flagged for all classes. He has never touched
+    /// Gunbreaker or Viper, and owns proper gloves for both.
+    ///
+    /// What must happen: the gloves are not offered as "your best" for classes that cannot exist at
+    /// level 1. Gunbreaker begins at 60 and Viper at 80 — a character who has never started them
+    /// would begin there, so their real gloves are already within reach and the level-1 pair is not.
+    /// Reading an untouched class as level 1 made those two claim a pair of starter gloves.
+    /// </summary>
+    [Fact]
+    public void Pop_WithStarterGlovesForEveryClass_IsNotToldTheyAreBestForAClassThatStartsAt60()
+    {
+        var starter = Item(8568, "Gants d'Ehcatl", "hand", 6, 1,
+            [Rogue, Ninja, Gunbreaker, Viper, Pugilist, Monk]);
+        var tankGloves = Item(2, "Gants de fantassin", "hand", 130, 50, [Gunbreaker]);
+        var viperGloves = Item(3, "Gants de rôdeur", "hand", 600, 80, [Viper]);
+
+        // Rogue and Ninja untouched too, but they share a bar that really does begin at 1.
+        var levels = JobLevelTable.WithLineageFilledIn(
+            Levels((Rogue, 0), (Ninja, 0), (Gunbreaker, 0), (Viper, 0), (Pugilist, 0), (Monk, 0)),
+            FrenchClient.Lineages());
+
+        var result = ArsenalTriage.Run(
+            [Owns(starter), Owns(tankGloves), Owns(viperGloves)], levels);
+
+        var glovesReason = Reason(result, "Gants d'Ehcatl");
+        Assert.DoesNotContain("PSB", glovesReason);
+        Assert.DoesNotContain("VPR", glovesReason);
+
+        // A class whose bar genuinely starts at 1 may still claim them, which is correct: a level-1
+        // Rogue would wear exactly these.
+        Assert.Contains("SUR", glovesReason);
+
+        // And the gear those two classes would actually begin with is what they are told to keep —
+        // it shares the slot with the starter pair, so it is the best of a group rather than a lone
+        // piece.
+        Assert.Equal(Verdict.KeptBest, Row(result, "Gants de fantassin").Verdict);
+        Assert.Contains("PSB", Reason(result, "Gants de fantassin"));
+        Assert.Equal(Verdict.KeptBest, Row(result, "Gants de rôdeur").Verdict);
+        Assert.Contains("VPR", Reason(result, "Gants de rôdeur"));
     }
 }

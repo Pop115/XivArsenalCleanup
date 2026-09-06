@@ -50,7 +50,8 @@ public static class GameJobs
                 job.RowId,
                 lookup,
                 display.Length > 0 ? display : lookup,
-                job.ClassJobParent.RowId));
+                job.ClassJobParent.RowId,
+                job.StartingLevel));
         }
 
         return new JobDirectory(jobs);

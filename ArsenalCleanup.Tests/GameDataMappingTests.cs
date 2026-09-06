@@ -156,6 +156,73 @@ public sealed class JobLevelTableTests
     }
 
     [Fact]
+    public void NobodyIsBelowTheLevelTheirClassBeginsAt()
+    {
+        // Gunbreaker has no base class and unlocks at 60, so a character who has never touched it
+        // would begin there — never at 1. Assuming otherwise made level-1 gear read as "your best"
+        // for a class that cannot exist below 60.
+        const uint Gunbreaker = 37;
+        const uint Viper = 41;
+        var jobs = new[]
+        {
+            new JobLineage(Gunbreaker, Gunbreaker, StartingLevel: 60),
+            new JobLineage(Viper, Viper, StartingLevel: 80),
+        };
+
+        var levels = JobLevelTable.WithLineageFilledIn(
+            new System.Collections.Generic.Dictionary<uint, int> { [Gunbreaker] = 0, [Viper] = 0 }, jobs);
+
+        Assert.Equal(60, levels[Gunbreaker]);
+        Assert.Equal(80, levels[Viper]);
+    }
+
+    [Fact]
+    public void LeavesALevelAboveTheStartingOneAlone()
+    {
+        const uint Gunbreaker = 37;
+        var jobs = new[] { new JobLineage(Gunbreaker, Gunbreaker, StartingLevel: 60) };
+
+        var levels = JobLevelTable.WithLineageFilledIn(
+            new System.Collections.Generic.Dictionary<uint, int> { [Gunbreaker] = 90 }, jobs);
+
+        Assert.Equal(90, levels[Gunbreaker]);
+    }
+
+    [Fact]
+    public void AJobSharingItsClassesBar_BeginsWhereThatClassDoes()
+    {
+        // Ninja reports a starting level of 1, not 30, because its level *is* the Rogue bar.
+        var jobs = new[]
+        {
+            new JobLineage(29, 29, StartingLevel: 1),
+            new JobLineage(30, 29, StartingLevel: 1),
+        };
+
+        var levels = JobLevelTable.WithLineageFilledIn(
+            new System.Collections.Generic.Dictionary<uint, int> { [29] = 0, [30] = 0 }, jobs);
+
+        Assert.Equal(1, levels[29]);
+        Assert.Equal(1, levels[30]);
+    }
+
+    [Fact]
+    public void FloorsAfterReconcilingALineage_NotBefore()
+    {
+        // Bard 41 must lift Archer to 41, and the floor must not then drag either back down.
+        var jobs = new[]
+        {
+            new JobLineage(5, 5, StartingLevel: 1),
+            new JobLineage(23, 5, StartingLevel: 1),
+        };
+
+        var levels = JobLevelTable.WithLineageFilledIn(
+            new System.Collections.Generic.Dictionary<uint, int> { [23] = 41 }, jobs);
+
+        Assert.Equal(41, levels[5]);
+        Assert.Equal(41, levels[23]);
+    }
+
+    [Fact]
     public void ProducesNothingFromNothing()
     {
         Assert.Empty(JobLevelTable.WithLineageFilledIn(

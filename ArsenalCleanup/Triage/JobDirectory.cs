@@ -16,7 +16,17 @@ namespace ArsenalCleanup.Triage;
 /// everywhere else in the game.
 /// </param>
 /// <param name="ParentId">The base class a job grows out of; a class with no antecedent points at itself.</param>
-public sealed record JobInfo(uint Id, string LookupAbbreviation, string DisplayAbbreviation, uint ParentId);
+/// <param name="StartingLevel">
+/// The level this class begins at — <c>ClassJob.StartingLevel</c>. Most start at 1, but a job with
+/// no base class starts where it unlocks: Gunbreaker at 60, Viper at 80. A job that does have a base
+/// class reads 1, because it inherits that class's experience bar.
+/// </param>
+public sealed record JobInfo(
+    uint Id,
+    string LookupAbbreviation,
+    string DisplayAbbreviation,
+    uint ParentId,
+    int StartingLevel = 1);
 
 /// <summary>
 /// Every class and job the game knows, and the bridge between the two abbreviations.
@@ -55,5 +65,5 @@ public sealed class JobDirectory
         return job.LookupAbbreviation.Length > 0 ? job.LookupAbbreviation : $"#{jobId}";
     }
 
-    public IReadOnlyList<JobLineage> Lineages() => [.. Jobs.Select(j => new JobLineage(j.Id, j.ParentId))];
+    public IReadOnlyList<JobLineage> Lineages() => [.. Jobs.Select(j => new JobLineage(j.Id, j.ParentId, j.StartingLevel))];
 }

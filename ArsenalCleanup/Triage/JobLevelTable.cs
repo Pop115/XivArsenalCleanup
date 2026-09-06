@@ -7,7 +7,8 @@ namespace ArsenalCleanup.Triage;
 /// The base class a job grows out of — Archer for Bard, Gladiator for Paladin. A class with no
 /// antecedent points at itself.
 /// </param>
-public sealed record JobLineage(uint Id, uint ParentId);
+/// <param name="StartingLevel">See <see cref="JobInfo.StartingLevel"/>.</param>
+public sealed record JobLineage(uint Id, uint ParentId, int StartingLevel = 1);
 
 /// <summary>
 /// Builds the "level per job" map the triage compares against.
@@ -54,6 +55,20 @@ public static class JobLevelTable
             {
                 levels[job.ParentId] = childLevel;
             }
+        }
+
+        // Finally, nobody is below the level their class begins at.
+        //
+        // A class reading 0 has not been started, and the question the triage asks is "could this
+        // gear ever serve that class?" — which is answered from the level it would begin at, not
+        // from zero. That level is not always 1: a job with no base class starts where it unlocks,
+        // so Gunbreaker begins at 60 and Viper at 80, and level-1 gear can never be the best either
+        // will own. Assuming 1 for everyone made a pair of level-1 gloves "your best" for classes
+        // that cannot exist below 60.
+        foreach (var job in jobs)
+        {
+            if (!levels.TryGetValue(job.Id, out var level)) continue;
+            if (level < job.StartingLevel) levels[job.Id] = job.StartingLevel;
         }
 
         return levels;

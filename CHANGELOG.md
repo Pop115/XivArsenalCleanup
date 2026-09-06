@@ -34,6 +34,11 @@ The plugin stands on its own.
   Sage is SAG, Monk is MOI — so those classes matched no column, owned no gear as far as the triage
   was concerned, and their wardrobe was judged against a fraction of itself. Lookups now use the
   English abbreviation; the player still reads their own.
+- **Classes are judged from the level they actually begin at.** An untouched class was assumed to
+  begin at 1, so a pair of level-1 gloves flagged for all classes came out as "your best" for
+  Gunbreaker and Viper — classes that cannot exist below 60 and 80. The level now comes from the
+  game's own `ClassJob.StartingLevel`, so a job with no base class begins where it unlocks, and one
+  that shares a class's experience bar begins where that bar does.
 - **Gear for every class no longer waits on a class nobody has started.** A class never touched
   reports level 0, so a level-1 item usable by all classes came out "keep until this job reaches
   level 1". Every class starts at 1 the moment it is picked up, so an unstarted one is judged at 1.

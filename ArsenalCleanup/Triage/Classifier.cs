@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -70,19 +69,6 @@ public sealed record JudgedPiece(
 /// </summary>
 public static class Classifier
 {
-    /// <summary>
-    /// The level to judge a job at.
-    ///
-    /// A class the player has never touched reads as level 0, but every class in the game starts at
-    /// 1 the moment its weapon is equipped — so a level-0 reading means "not started", not "cannot
-    /// wear anything". Without this, every level-1 item usable by all classes came out as "keep
-    /// until this job reaches level 1", which is nonsense on its face and buried the real results.
-    ///
-    /// Jobs proper are unaffected: they unlock at level 30 and above, and their gear requires those
-    /// levels anyway, so treating an unstarted one as level 1 never makes their gear look wearable.
-    /// </summary>
-    public static int EffectiveLevel(int reportedLevel) => Math.Max(reportedLevel, 1);
-
     public static List<JudgedPiece> Classify(
         IReadOnlyList<OwnedPiece> pieces,
         IReadOnlyDictionary<uint, int> jobLevels)
@@ -145,7 +131,7 @@ public static class Classifier
             return Judge(piece, jobId, jobLevels, Verdict.NeedsReview, null, ReasonCode.JobLevelUnknown);
         }
 
-        var level = EffectiveLevel(reported);
+        var level = reported;
         var others = group.Where(p => !ReferenceEquals(p, piece)).ToList();
 
         // Beaten by something strictly better that can be equipped right now.
@@ -223,7 +209,7 @@ public static class Classifier
             piece,
             facts,
             jobId,
-            jobLevels.TryGetValue(jobId, out var reported) ? EffectiveLevel(reported) : null,
+            jobLevels.TryGetValue(jobId, out var reported) ? reported : null,
             finalVerdict,
             replacedBy,
             reason,
