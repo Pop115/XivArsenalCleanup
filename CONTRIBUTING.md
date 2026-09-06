@@ -88,9 +88,10 @@ a rule for, the level range of the whole game, and the specific items from every
 regeneration that quietly stopped sampling relics would otherwise leave the property tests passing
 while testing nothing in particular.
 
-The sample records the game version it came from. After a patch adds a class or changes an item, it
-can be regenerated from a catalogue built out of the game's sheets — and the guard tests will say
-whether the new sample is still representative.
+The sample records the game version it came from, so a failure after a patch is recognisable as
+staleness rather than as a bug. Regenerating it is currently a manual job — there is no tool for it
+in the repository yet, which is tracked as an issue. Whatever produces the next sample, the guard
+tests are what say whether it is still representative.
 
 ## Style
 
