@@ -6,8 +6,10 @@ using System.Numerics;
 using ArsenalCleanup.GameData;
 using ArsenalCleanup.Triage;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using Dalamud.Plugin.Services;
 
 namespace ArsenalCleanup.Windows;
 
@@ -25,7 +27,12 @@ namespace ArsenalCleanup.Windows;
 [ExcludeFromCodeCoverage]
 public sealed class MainWindow : Window, IDisposable
 {
+    /// <summary>Icons make a gear list scannable — a player recognises a piece by its icon long
+    /// before they finish reading its name.</summary>
+    private const float IconSize = 32f;
+
     private readonly ArsenalService arsenal;
+    private readonly ITextureProvider textures;
     private readonly Configuration configuration;
     private readonly string defaultExportDirectory;
     private readonly Action openSettings;
@@ -36,12 +43,14 @@ public sealed class MainWindow : Window, IDisposable
 
     public MainWindow(
         ArsenalService arsenal,
+        ITextureProvider textures,
         Configuration configuration,
         string defaultExportDirectory,
         Action openSettings)
         : base("Arsenal Cleanup###ArsenalCleanupMain")
     {
         this.arsenal = arsenal;
+        this.textures = textures;
         this.configuration = configuration;
         this.defaultExportDirectory = defaultExportDirectory;
         this.openSettings = openSettings;
@@ -184,7 +193,7 @@ public sealed class MainWindow : Window, IDisposable
             ? pieces
             : pieces.Where(p => p.Verdict is Verdict.Obsolete or Verdict.NeedsReview);
 
-    private static void DrawPieceTable(string slot, List<TriagedPiece> pieces)
+    private void DrawPieceTable(string slot, List<TriagedPiece> pieces)
     {
         // Worn gear first, then the chest in the order the game itself draws it: the two blocks
         // index their positions in different containers, so interleaving them would be meaningless.
@@ -211,6 +220,8 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
+            DrawIcon(piece.Facts.IconId);
+            ImGui.SameLine();
             ImGui.Text(piece.Facts.Name);
             if (piece.Piece.IsEquipped)
             {
@@ -235,6 +246,25 @@ public sealed class MainWindow : Window, IDisposable
             {
                 ImGui.TextDisabled($"judged on a job at level {level}");
             }
+        }
+    }
+
+    /// <summary>
+    /// Draws an item's icon, falling back to blank space of the same size when the texture is not
+    /// ready yet — the game loads them lazily, and a row that jumps sideways on the second frame is
+    /// worse than one that starts with a gap.
+    /// </summary>
+    private void DrawIcon(ushort iconId)
+    {
+        var size = new Vector2(IconSize, IconSize);
+        if (iconId != 0 && textures.TryGetFromGameIcon(new GameIconLookup(iconId), out var shared)
+            && shared.TryGetWrap(out var wrap, out _))
+        {
+            ImGui.Image(wrap.Handle, size);
+        }
+        else
+        {
+            ImGui.Dummy(size);
         }
     }
 }

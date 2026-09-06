@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>0.3.0.0</Version>
+    <Version>0.4.0.0</Version>
     <!-- Manifest fields — see https://github.com/goatcorp/DalamudPackager -->
     <Author>Pop115</Author>
     <Name>Arsenal Cleanup</Name>
-    <Punchline>Exports your Armoury Chest and worn gear to a JSON file.</Punchline>
-    <Description>Reads the twelve Armoury Chest containers and the gear currently worn through
-Dalamud's official IGameInventory API (no network capture, no undocumented memory access) and
-writes a structured JSON export: item id, quantity, HQ and collectable flags, slot, in-tab
-position, and whether the piece was equipped.
+    <Punchline>Sorts your Armoury Chest into what is worth keeping and what is not.</Punchline>
+    <Description>Reads your Armoury Chest and the gear you are wearing, compares each piece
+against everything else you own for the same slot, and tells you what you can stop carrying around.
 
-Intended as a data source for external inventory tools — the export identifies items by numeric
-id, so a consumer never has to match on a localised item name.</Description>
+It takes your job levels into account, so it never suggests parting with the only weapon you can
+actually hold, and it says how to part with what it flags: the Armoire first (kept forever, nothing
+lost), then desynthesis (materials back), then discarding. Relics are never suggested for disposal.
+
+Everything happens in game, from the game's own item data — no companion app, and nothing to keep in
+step with patches. A JSON export is there for anyone wiring it into a tool of their own.</Description>
     <RepoUrl>https://github.com/Pop115/ClaudeGithubWorkspace</RepoUrl>
-    <Tags>inventory;export;json;armoury</Tags>
+    <Tags>inventory;armoury;cleanup;gear;export</Tags>
   </PropertyGroup>
 </Project>

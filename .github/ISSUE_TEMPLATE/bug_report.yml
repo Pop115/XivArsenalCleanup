@@ -1,0 +1,64 @@
+name: Bug report
+description: Something the plugin got wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The most useful bug reports about this plugin name a **specific piece
+        of gear** — the triage is a chain of comparisons, and one real item is usually enough to
+        find where it went wrong.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What the plugin said, and what you expected instead.
+      placeholder: |
+        "Hard Leather Himantes" was shown as replaced by "Weathered Fists", but I own "Cesti",
+        which is better and which I can already equip.
+    validations:
+      required: true
+
+  - type: input
+    id: piece
+    attributes:
+      label: The piece involved
+      description: Its exact in-game name, and the name of anything it was compared against.
+    validations:
+      required: true
+
+  - type: input
+    id: job
+    attributes:
+      label: Job and level
+      description: The job the piece is for, and your current level on it.
+      placeholder: Pugilist 25
+    validations:
+      required: true
+
+  - type: dropdown
+    id: worn
+    attributes:
+      label: Was the piece worn or in the chest?
+      options:
+        - In the Armoury Chest
+        - Worn on my character
+        - Both — I own two copies
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: Shown in Dalamud's plugin installer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Anything from dalamud.log
+      description: Only if the plugin errored. Paste the lines mentioning ArsenalCleanup.
+      render: text

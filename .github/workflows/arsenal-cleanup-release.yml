@@ -1,0 +1,98 @@
+name: ArsenalCleanup release
+
+# Cutting a release is a deliberate act: push a tag, get a zip a player can install.
+#
+# The tag is namespaced because this repository can hold more than one project, and an unqualified
+# "v0.4.0" would be ambiguous the moment a second one arrives.
+on:
+  push:
+    tags:
+      - 'arsenalcleanup-v*'
+
+defaults:
+  run:
+    working-directory: ArsenalCleanup
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Fetch Dalamud
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP 'dalamud.zip'
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath "$env:RUNNER_TEMP/dalamud" -Force
+          "DALAMUD_HOME=$env:RUNNER_TEMP/dalamud" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build and test
+        # A release is never cut from code that has not passed the same gates as everything else.
+        run: |
+          dotnet build ArsenalCleanup.slnx --configuration Release
+          dotnet test ArsenalCleanup.slnx --configuration Release --no-build
+
+      - name: Check the tag matches the manifest version
+        # A tag saying one thing and a manifest saying another is how people end up installing a
+        # version that does not exist.
+        shell: pwsh
+        run: |
+          $manifest = Get-Content ArsenalCleanup/bin/Release/ArsenalCleanup/ArsenalCleanup.json | ConvertFrom-Json
+          $tagged = "${{ github.ref_name }}" -replace '^arsenalcleanup-v', ''
+          $built = $manifest.AssemblyVersion -replace '\.0$', ''
+          if ($tagged -ne $built) {
+            throw "Tag says $tagged, the built manifest says $built (from AssemblyVersion $($manifest.AssemblyVersion)). Bump <Version> in the csproj, or retag."
+          }
+          Write-Host "Tag and manifest agree on $tagged."
+
+      - name: Publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            "ArsenalCleanup/bin/Release/ArsenalCleanup/latest.zip" `
+            --title "Arsenal Cleanup ${{ github.ref_name }}" `
+            --notes "Install by adding the repository URL from the README to Dalamud's custom plugin repositories, or download latest.zip and load it as a dev plugin." `
+            --repo "${{ github.repository }}"
+
+      - name: Update the plugin repository manifest
+        # Dalamud installs from a JSON list of plugins, so the list has to point at the release that
+        # was just published. Committing it back to main is what makes the custom repository URL a
+        # stable address that always resolves to the newest build.
+        shell: pwsh
+        run: |
+          $manifest = Get-Content ArsenalCleanup/bin/Release/ArsenalCleanup/ArsenalCleanup.json | ConvertFrom-Json
+          $download = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/latest.zip"
+
+          $entry = $manifest | Select-Object *
+          $entry | Add-Member -NotePropertyName 'DownloadLinkInstall' -NotePropertyValue $download -Force
+          $entry | Add-Member -NotePropertyName 'DownloadLinkUpdate' -NotePropertyValue $download -Force
+          $entry | Add-Member -NotePropertyName 'DownloadLinkTesting' -NotePropertyValue $download -Force
+          $entry | Add-Member -NotePropertyName 'IsHide' -NotePropertyValue $false -Force
+          $entry | Add-Member -NotePropertyName 'DownloadCount' -NotePropertyValue 0 -Force
+
+          ,@($entry) | ConvertTo-Json -Depth 10 | Set-Content -Path "$env:GITHUB_WORKSPACE/repo.json" -Encoding utf8
+
+          cd $env:GITHUB_WORKSPACE
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add repo.json
+          if (git diff --staged --quiet) {
+            Write-Host "repo.json already points at this release."
+          } else {
+            git commit -m "Point the plugin repository at ${{ github.ref_name }}"
+            git push origin HEAD:main
+          }

@@ -66,8 +66,17 @@ separate features.
 
 ## Installing
 
-Not on the official plugin repository. To build and load it yourself, see
-[CONTRIBUTING.md](CONTRIBUTING.md).
+Not on the official Dalamud plugin repository, so it installs from this one:
+
+1. In game, `/xlsettings` → **Experimental** → **Custom Plugin Repositories**.
+2. Add `https://raw.githubusercontent.com/Pop115/ClaudeGithubWorkspace/main/repo.json` and save.
+3. `/xlplugins` → search for **Arsenal Cleanup** → Install.
+
+Updates then arrive the same way as for any other plugin.
+
+> That URL only resolves while the repository is public. If it 404s, the repository is private and
+> the plugin has to be built and loaded as a dev plugin instead — see
+> [CONTRIBUTING.md](CONTRIBUTING.md), which is also where to start if you want to change something.
 
 ## The JSON export
 

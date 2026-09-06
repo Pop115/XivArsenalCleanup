@@ -31,6 +31,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IGameInventory GameInventory { get; private set; } = null!;
     [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
     [PluginService] internal static IPlayerState PlayerState { get; private set; } = null!;
+    [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
@@ -62,7 +63,7 @@ public sealed class Plugin : IDalamudPlugin
         arsenal = new ArsenalService(new GameInventorySource(), DataManager, PlayerState, Log);
 
         configWindow = new ConfigWindow(this, defaultExportDirectory);
-        mainWindow = new MainWindow(arsenal, Configuration, defaultExportDirectory, () => configWindow.Toggle());
+        mainWindow = new MainWindow(arsenal, TextureProvider, Configuration, defaultExportDirectory, () => configWindow.Toggle());
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(mainWindow);
 
