@@ -61,6 +61,22 @@ jobs:
           --settings coverlet.runsettings --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results.trx"
 
+      - name: Check the tests actually ran
+        # `dotnet test` exits 0 when it discovers nothing at all, so a broken runner reads as a
+        # green build. This caught exactly that: a runner major bump stopped discovering the suite
+        # and every gate still passed. A floor rather than an exact count, so adding tests never
+        # breaks the build — only losing them does.
+        shell: pwsh
+        run: |
+          $trx = Get-ChildItem -Recurse -Filter test-results.trx | Select-Object -Last 1
+          if (-not $trx) { throw "No test results were produced at all." }
+          [xml]$xml = Get-Content $trx.FullName
+          $executed = [int]$xml.TestRun.ResultSummary.Counters.executed
+          $failed = [int]$xml.TestRun.ResultSummary.Counters.failed
+          Write-Host "$executed test(s) ran, $failed failed."
+          if ($executed -lt 100) { throw "Only $executed test(s) ran; the suite has well over 100. The runner is probably not discovering them." }
+          if ($failed -gt 0) { throw "$failed test(s) failed." }
+
       - name: Check coverage threshold
         # The plugin's decision-making code is fully covered today. This guards that: the Dalamud
         # adapters are marked ExcludeFromCodeCoverage precisely so this number stays meaningful.

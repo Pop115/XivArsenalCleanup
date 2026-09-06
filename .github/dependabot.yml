@@ -23,3 +23,12 @@ updates:
           - 'xunit*'
           - 'Microsoft.NET.Test.Sdk'
           - 'coverlet.*'
+    ignore:
+      # xunit and its VSTest runner are one unit, and their majors are not interchangeable: runner
+      # 4.x discovers only xunit v3 tests and silently finds nothing when paired with xunit 2.x —
+      # which `dotnet test` reports as success. Moving to v3 is a migration someone has to sit down
+      # and do, so a bot must not start it.
+      - dependency-name: 'xunit'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'xunit.runner.visualstudio'
+        update-types: ['version-update:semver-major']

@@ -26,8 +26,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <!-- xunit and its VSTest runner are one unit: runner 4.x only discovers xunit v3 tests, and
+         pairing it with xunit 2.x finds nothing at all while still exiting 0. Moving to v3 is a
+         migration, not a version bump, so Dependabot is told to leave both majors alone
+         (see .github/dependabot.yml). -->
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
