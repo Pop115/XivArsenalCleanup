@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>0.3.0.0</Version>
+    <!-- Manifest fields — see https://github.com/goatcorp/DalamudPackager -->
+    <Author>Pop115</Author>
+    <Name>Arsenal Cleanup</Name>
+    <Punchline>Exports your Armoury Chest and worn gear to a JSON file.</Punchline>
+    <Description>Reads the twelve Armoury Chest containers and the gear currently worn through
+Dalamud's official IGameInventory API (no network capture, no undocumented memory access) and
+writes a structured JSON export: item id, quantity, HQ and collectable flags, slot, in-tab
+position, and whether the piece was equipped.
+
+Intended as a data source for external inventory tools — the export identifies items by numeric
+id, so a consumer never has to match on a localised item name.</Description>
+    <RepoUrl>https://github.com/Pop115/ClaudeGithubWorkspace</RepoUrl>
+    <Tags>inventory;export;json;armoury</Tags>
+  </PropertyGroup>
+</Project>

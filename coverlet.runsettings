@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Coverage settings. See the README for the exact `dotnet test` invocation.
+
+  Without the Include filter, coverlet also instruments everything the plugin references (Dalamud
+  and the whole of FFXIVClientStructs) and reports this plugin's real coverage as a fraction of a
+  percent, which is worse than no number at all.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[ArsenalCleanup]*</Include>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
