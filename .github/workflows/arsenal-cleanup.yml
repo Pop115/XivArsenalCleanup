@@ -38,8 +38,9 @@ jobs:
         # result — the same resolution order Dalamud.NET.Sdk and the test project both use.
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile dalamud.zip
-          Expand-Archive -Path dalamud.zip -DestinationPath "$env:RUNNER_TEMP/dalamud" -Force
+          $zip = Join-Path $env:RUNNER_TEMP 'dalamud.zip'
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath "$env:RUNNER_TEMP/dalamud" -Force
           "DALAMUD_HOME=$env:RUNNER_TEMP/dalamud" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Restore
