@@ -25,6 +25,12 @@
   </Target>
 
   <ItemGroup>
+    <!-- The sampled game data the property tests draw from. Copied rather than embedded so it stays
+         readable and diffable in the repository. -->
+    <None Update="TestData\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <!-- xunit and its VSTest runner are one unit: runner 4.x only discovers xunit v3 tests, and
          pairing it with xunit 2.x finds nothing at all while still exiting 0. Moving to v3 is a

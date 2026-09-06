@@ -1,0 +1,307 @@
+{
+ "_comment": "The game's classes and jobs. lookupAbbreviation is the English one the ClassJobCategory columns are named after; displayAbbreviation is the French one a player on that client reads. startingLevel is ClassJob.StartingLevel.",
+ "gameVersion": "2026.08.11.0000.0000",
+ "jobs": [
+  {
+   "id": 1,
+   "lookupAbbreviation": "GLA",
+   "displayAbbreviation": "GLA",
+   "parentId": 1,
+   "startingLevel": 1
+  },
+  {
+   "id": 2,
+   "lookupAbbreviation": "PGL",
+   "displayAbbreviation": "PGL",
+   "parentId": 2,
+   "startingLevel": 1
+  },
+  {
+   "id": 3,
+   "lookupAbbreviation": "MRD",
+   "displayAbbreviation": "MRD",
+   "parentId": 3,
+   "startingLevel": 1
+  },
+  {
+   "id": 4,
+   "lookupAbbreviation": "LNC",
+   "displayAbbreviation": "HAS",
+   "parentId": 4,
+   "startingLevel": 1
+  },
+  {
+   "id": 5,
+   "lookupAbbreviation": "ARC",
+   "displayAbbreviation": "ARC",
+   "parentId": 5,
+   "startingLevel": 1
+  },
+  {
+   "id": 6,
+   "lookupAbbreviation": "CNJ",
+   "displayAbbreviation": "ÉLM",
+   "parentId": 6,
+   "startingLevel": 1
+  },
+  {
+   "id": 7,
+   "lookupAbbreviation": "THM",
+   "displayAbbreviation": "OCC",
+   "parentId": 7,
+   "startingLevel": 1
+  },
+  {
+   "id": 8,
+   "lookupAbbreviation": "CRP",
+   "displayAbbreviation": "MEN",
+   "parentId": 8,
+   "startingLevel": 1
+  },
+  {
+   "id": 9,
+   "lookupAbbreviation": "BSM",
+   "displayAbbreviation": "FRG",
+   "parentId": 9,
+   "startingLevel": 1
+  },
+  {
+   "id": 10,
+   "lookupAbbreviation": "ARM",
+   "displayAbbreviation": "ARM",
+   "parentId": 10,
+   "startingLevel": 1
+  },
+  {
+   "id": 11,
+   "lookupAbbreviation": "GSM",
+   "displayAbbreviation": "ORF",
+   "parentId": 11,
+   "startingLevel": 1
+  },
+  {
+   "id": 12,
+   "lookupAbbreviation": "LTW",
+   "displayAbbreviation": "TAN",
+   "parentId": 12,
+   "startingLevel": 1
+  },
+  {
+   "id": 13,
+   "lookupAbbreviation": "WVR",
+   "displayAbbreviation": "COU",
+   "parentId": 13,
+   "startingLevel": 1
+  },
+  {
+   "id": 14,
+   "lookupAbbreviation": "ALC",
+   "displayAbbreviation": "ALC",
+   "parentId": 14,
+   "startingLevel": 1
+  },
+  {
+   "id": 15,
+   "lookupAbbreviation": "CUL",
+   "displayAbbreviation": "CUI",
+   "parentId": 15,
+   "startingLevel": 1
+  },
+  {
+   "id": 16,
+   "lookupAbbreviation": "MIN",
+   "displayAbbreviation": "MIN",
+   "parentId": 16,
+   "startingLevel": 1
+  },
+  {
+   "id": 17,
+   "lookupAbbreviation": "BTN",
+   "displayAbbreviation": "BTN",
+   "parentId": 17,
+   "startingLevel": 1
+  },
+  {
+   "id": 18,
+   "lookupAbbreviation": "FSH",
+   "displayAbbreviation": "PÊC",
+   "parentId": 18,
+   "startingLevel": 1
+  },
+  {
+   "id": 19,
+   "lookupAbbreviation": "PLD",
+   "displayAbbreviation": "PLD",
+   "parentId": 1,
+   "startingLevel": 1
+  },
+  {
+   "id": 20,
+   "lookupAbbreviation": "MNK",
+   "displayAbbreviation": "MOI",
+   "parentId": 2,
+   "startingLevel": 1
+  },
+  {
+   "id": 21,
+   "lookupAbbreviation": "WAR",
+   "displayAbbreviation": "GUE",
+   "parentId": 3,
+   "startingLevel": 1
+  },
+  {
+   "id": 22,
+   "lookupAbbreviation": "DRG",
+   "displayAbbreviation": "DRG",
+   "parentId": 4,
+   "startingLevel": 1
+  },
+  {
+   "id": 23,
+   "lookupAbbreviation": "BRD",
+   "displayAbbreviation": "BRD",
+   "parentId": 5,
+   "startingLevel": 1
+  },
+  {
+   "id": 24,
+   "lookupAbbreviation": "WHM",
+   "displayAbbreviation": "MBL",
+   "parentId": 6,
+   "startingLevel": 1
+  },
+  {
+   "id": 25,
+   "lookupAbbreviation": "BLM",
+   "displayAbbreviation": "MNO",
+   "parentId": 7,
+   "startingLevel": 1
+  },
+  {
+   "id": 26,
+   "lookupAbbreviation": "ACN",
+   "displayAbbreviation": "ACN",
+   "parentId": 26,
+   "startingLevel": 1
+  },
+  {
+   "id": 27,
+   "lookupAbbreviation": "SMN",
+   "displayAbbreviation": "INV",
+   "parentId": 26,
+   "startingLevel": 1
+  },
+  {
+   "id": 28,
+   "lookupAbbreviation": "SCH",
+   "displayAbbreviation": "ÉRU",
+   "parentId": 26,
+   "startingLevel": 1
+  },
+  {
+   "id": 29,
+   "lookupAbbreviation": "ROG",
+   "displayAbbreviation": "SUR",
+   "parentId": 29,
+   "startingLevel": 1
+  },
+  {
+   "id": 30,
+   "lookupAbbreviation": "NIN",
+   "displayAbbreviation": "NIN",
+   "parentId": 29,
+   "startingLevel": 1
+  },
+  {
+   "id": 31,
+   "lookupAbbreviation": "MCH",
+   "displayAbbreviation": "MCH",
+   "parentId": 31,
+   "startingLevel": 30
+  },
+  {
+   "id": 32,
+   "lookupAbbreviation": "DRK",
+   "displayAbbreviation": "CHN",
+   "parentId": 32,
+   "startingLevel": 30
+  },
+  {
+   "id": 33,
+   "lookupAbbreviation": "AST",
+   "displayAbbreviation": "AST",
+   "parentId": 33,
+   "startingLevel": 30
+  },
+  {
+   "id": 34,
+   "lookupAbbreviation": "SAM",
+   "displayAbbreviation": "SAM",
+   "parentId": 34,
+   "startingLevel": 50
+  },
+  {
+   "id": 35,
+   "lookupAbbreviation": "RDM",
+   "displayAbbreviation": "MRG",
+   "parentId": 35,
+   "startingLevel": 50
+  },
+  {
+   "id": 36,
+   "lookupAbbreviation": "BLU",
+   "displayAbbreviation": "MBU",
+   "parentId": 36,
+   "startingLevel": 1
+  },
+  {
+   "id": 37,
+   "lookupAbbreviation": "GNB",
+   "displayAbbreviation": "PSB",
+   "parentId": 37,
+   "startingLevel": 60
+  },
+  {
+   "id": 38,
+   "lookupAbbreviation": "DNC",
+   "displayAbbreviation": "DNS",
+   "parentId": 38,
+   "startingLevel": 60
+  },
+  {
+   "id": 39,
+   "lookupAbbreviation": "RPR",
+   "displayAbbreviation": "FCH",
+   "parentId": 39,
+   "startingLevel": 70
+  },
+  {
+   "id": 40,
+   "lookupAbbreviation": "SGE",
+   "displayAbbreviation": "SAG",
+   "parentId": 40,
+   "startingLevel": 70
+  },
+  {
+   "id": 41,
+   "lookupAbbreviation": "VPR",
+   "displayAbbreviation": "VPR",
+   "parentId": 41,
+   "startingLevel": 80
+  },
+  {
+   "id": 42,
+   "lookupAbbreviation": "PCT",
+   "displayAbbreviation": "PIC",
+   "parentId": 42,
+   "startingLevel": 80
+  },
+  {
+   "id": 43,
+   "lookupAbbreviation": "BST",
+   "displayAbbreviation": "DRE",
+   "parentId": 43,
+   "startingLevel": 1
+  }
+ ]
+}

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ArsenalCleanup.Tests.TestData;
 using ArsenalCleanup.Triage;
 using ArsenalCleanup.Windows;
 using Xunit;
@@ -24,42 +25,28 @@ public sealed class ChaosTests
 {
     private const int Runs = 400;
 
+    /// <summary>
+    /// The real forty-three classes, with the two abbreviations and the level each begins at.
+    /// </summary>
+    private static readonly JobDirectory Jobs = RealGameData.Jobs;
+
+    /// <summary>Real gear, sampled from the game's own sheets — see <see cref="RealGameData"/>.</summary>
+    private static readonly IReadOnlyList<GearFacts> Catalogue = RealGameData.Items;
+
     private static readonly string[] Slots =
         ["main", "offhand", "head", "body", "hand", "legs", "feet", "ear", "neck", "wrist", "ring", "soul_crystal"];
 
-    private static readonly JobDirectory Jobs = new([.. Enumerable.Range(1, 12)
-        .Select(i => new JobInfo((uint)i, $"J{i}", $"C{i}", (uint)(i > 6 ? i - 6 : i)))]);
-
     /// <summary>
-    /// A catalogue of items, drawn once per seed.
+    /// One deliberately hostile armoury, built from gear that actually exists.
     ///
-    /// An item id determines an item's facts, exactly as it does in the game — a generator that
-    /// gives the same id two different item levels is not hostile, it is impossible, and chasing the
-    /// contradictions it creates says nothing about the plugin.
-    /// </summary>
-    private static List<GearFacts> Catalogue(Random random) =>
-        [.. Enumerable.Range(1, 25).Select(id => new GearFacts(
-            ItemId: (uint)id,
-            Name: $"Item {id}",
-            Slot: Slots[random.Next(Slots.Length)],
-            ItemLevel: (ushort)random.Next(0, 800),          // 0 is possible: some rows really are
-            EquipLevel: (byte)random.Next(0, 120),           // above the cap on purpose
-            IconId: (ushort)random.Next(0, 60000),
-            JobIds: [.. Enumerable.Range(0, random.Next(0, 5))
-                .Select(_ => (uint)random.Next(1, 14))       // 13 is outside the directory, on purpose
-                .Distinct()],
-            IsRelic: random.Next(12) == 0,
-            IsDesynthesisable: random.Next(2) == 0,
-            IsArmoireEligible: random.Next(4) == 0))];
-
-    /// <summary>
-    /// One deliberately hostile armoury: duplicates, worn copies, items the game has no row for, and
-    /// a character whose classes range from untouched to capped — including classes the game never
-    /// reported a level for at all.
+    /// Real items bring the awkwardness invented ones never do: item levels that do not track equip
+    /// levels, level-1 pieces flagged for all forty-three classes, jobs sharing a category with their
+    /// base class. On top of that sit the cases the game itself would not produce but a client can —
+    /// an id the sheets have no row for, a piece belonging to no class — because those are what a
+    /// mod, a stale patch or a bad read look like.
     /// </summary>
     private static (List<OwnedPiece> Pieces, Dictionary<uint, int> Levels) Armoury(Random random)
     {
-        var catalogue = Catalogue(random);
         var pieceCount = random.Next(0, 60);
         var pieces = new List<OwnedPiece>(pieceCount);
 
@@ -68,7 +55,8 @@ public sealed class ChaosTests
 
         for (var i = 0; i < pieceCount; i++)
         {
-            var facts = random.Next(10) == 0 ? null : catalogue[random.Next(catalogue.Count)];
+            // One piece in ten is something the game data cannot explain.
+            var facts = random.Next(10) == 0 ? null : Catalogue[random.Next(Catalogue.Count)];
             var slot = facts?.Slot ?? Slots[random.Next(Slots.Length)];
             var worn = random.Next(6) == 0;
 
@@ -77,22 +65,24 @@ public sealed class ChaosTests
             nextPosition[key] = position + 1;
 
             pieces.Add(new OwnedPiece(
-                facts?.ItemId ?? (uint)random.Next(100, 200),
+                facts?.ItemId ?? (uint)random.Next(900_000, 950_000),
                 slot,
                 position,
                 worn,
                 facts));
         }
 
-        var levels = new Dictionary<uint, int>();
+        // A character anywhere between untouched and capped, with some classes the game never
+        // reported at all — then reconciled the way the plugin does it, lineages and starting
+        // levels included.
+        var raw = new Dictionary<uint, int>();
         foreach (var job in Jobs.Jobs)
         {
-            // Sometimes absent entirely, which is a different case from level 0.
             if (random.Next(8) == 0) continue;
-            levels[job.Id] = random.Next(0, 101);
+            raw[job.Id] = random.Next(0, 101);
         }
 
-        return (pieces, levels);
+        return (pieces, JobLevelTable.WithLineageFilledIn(raw, Jobs.Lineages()));
     }
 
     [Fact]
@@ -255,12 +245,14 @@ public sealed class ChaosTests
     [Fact]
     public void HandlesAnArmouryOfNothingButDuplicates()
     {
-        var same = new GearFacts(1688, "Cesti", "main", 19, 19, 1, [1], false, true, false);
+        // Cesti, the real item: id 1688, item level 19, wearable from 19.
+        var same = RealGameData.Item(1688);
         var pieces = Enumerable.Range(0, 200)
-            .Select(i => new OwnedPiece(1688, "main", i, i == 0, same))
+            .Select(i => new OwnedPiece(same.ItemId, same.Slot, i, i == 0, same))
             .ToList();
 
-        var result = ArsenalTriage.Run(pieces, new Dictionary<uint, int> { [1] = 90 });
+        var levels = Jobs.Jobs.ToDictionary(j => j.Id, _ => 90);
+        var result = ArsenalTriage.Run(pieces, levels);
 
         Assert.Equal(200, result.Pieces.Count);
         // Identical pieces cannot supersede each other, so none of them is replaced by another.

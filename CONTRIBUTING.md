@@ -72,6 +72,26 @@ If you fix a bug, the test that comes with it should fail before the fix and pas
 bug came from a real situation, say so in a comment — several tests here carry the exact item names
 and levels that exposed the problem, and that context is worth more than the assertion.
 
+## The game data the tests use
+
+`ArsenalCleanup.Tests/TestData/` holds a stratified sample of real gear and the real class list,
+taken from the game's own sheets and committed alongside the tests.
+
+They are files rather than a live read for one reason: CI has no game installed, and a suite that
+only runs on a machine with FFXIV on it is a suite that stops running. What they buy over invented
+numbers is the awkwardness of real data — item levels that do not track equip levels, level-1 pieces
+flagged for all forty-three classes, jobs sharing a category with their base class. Nobody writing
+fixtures by hand produces those, and two of the bugs fixed here lived in exactly that territory.
+
+`RealGameDataTests` guards the sample: it has to keep covering every slot, every flag the triage has
+a rule for, the level range of the whole game, and the specific items from every reported bug. A
+regeneration that quietly stopped sampling relics would otherwise leave the property tests passing
+while testing nothing in particular.
+
+The sample records the game version it came from. After a patch adds a class or changes an item, it
+can be regenerated from a catalogue built out of the game's sheets — and the guard tests will say
+whether the new sample is still representative.
+
 ## Style
 
 - Comments explain **why**, not what. The code already says what.

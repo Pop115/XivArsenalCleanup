@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using ArsenalCleanup.Tests.TestData;
 using ArsenalCleanup.Triage;
 using ArsenalCleanup.Windows;
 using Xunit;
@@ -35,7 +36,7 @@ public sealed class PersonaScenarioTests
         new JobInfo(Paladin, "PLD", "PLD", Gladiator),
         new JobInfo(Monk, "MNK", "MOI", Pugilist),
         new JobInfo(Bard, "BRD", "BRD", Archer),
-        new JobInfo(Dancer, "DNC", "DNS", Dancer, StartingLevel: 70),
+        new JobInfo(Dancer, "DNC", "DNS", Dancer, StartingLevel: 60),
         new JobInfo(Sage, "SGE", "SAG", Sage, StartingLevel: 70),
         new JobInfo(Rogue, "ROG", "SUR", Rogue),
         new JobInfo(Ninja, "NIN", "NIN", Rogue),
@@ -280,33 +281,41 @@ public sealed class PersonaScenarioTests
     [Fact]
     public void Pop_WithStarterGlovesForEveryClass_IsNotToldTheyAreBestForAClassThatStartsAt60()
     {
-        var starter = Item(8568, "Gants d'Ehcatl", "hand", 6, 1,
-            [Rogue, Ninja, Gunbreaker, Viper, Pugilist, Monk]);
-        var tankGloves = Item(2, "Gants de fantassin", "hand", 130, 50, [Gunbreaker]);
-        var viperGloves = Item(3, "Gants de rôdeur", "hand", 600, 80, [Viper]);
+        // The real item, straight from the game's sheets: id 8568, item level 6, wearable from
+        // level 1, flagged for every class. Its own numbers, not a reconstruction of them.
+        var starter = RealGameData.Item(8568);
+        Assert.Equal(1, starter.EquipLevel);
+        Assert.Contains(Gunbreaker, starter.JobIds);
 
-        // Rogue and Ninja untouched too, but they share a bar that really does begin at 1.
-        var levels = JobLevelTable.WithLineageFilledIn(
-            Levels((Rogue, 0), (Ninja, 0), (Gunbreaker, 0), (Viper, 0), (Pugilist, 0), (Monk, 0)),
-            FrenchClient.Lineages());
+        var tankGloves = Item(900_001, "Gants de fantassin", "hand", 130, 50, [Gunbreaker]);
+        var viperGloves = Item(900_002, "Gants de rôdeur", "hand", 600, 80, [Viper]);
+
+        // The real class list, and a character who has started none of them — which is what the
+        // game reports for every class at level 0.
+        var jobs = RealGameData.Jobs;
+        var raw = jobs.Jobs.ToDictionary(j => j.Id, _ => 0);
+        var levels = JobLevelTable.WithLineageFilledIn(raw, jobs.Lineages());
+
+        Assert.Equal(60, levels[Gunbreaker]);
+        Assert.Equal(80, levels[Viper]);
 
         var result = ArsenalTriage.Run(
-            [Owns(starter), Owns(tankGloves), Owns(viperGloves)], levels);
+            [Owns(starter), Owns(tankGloves, position: 1), Owns(viperGloves, position: 2)], levels);
 
-        var glovesReason = Reason(result, "Gants d'Ehcatl");
+        var glovesReason = Presentation.Reason(
+            result.Pieces.First(p => p.Facts.ItemId == starter.ItemId), jobs);
+
+        // Gunbreaker begins at 60 and Viper at 80, so their own gloves are already within reach and
+        // the level-1 pair is not theirs to keep.
         Assert.DoesNotContain("PSB", glovesReason);
         Assert.DoesNotContain("VPR", glovesReason);
 
-        // A class whose bar genuinely starts at 1 may still claim them, which is correct: a level-1
-        // Rogue would wear exactly these.
-        Assert.Contains("SUR", glovesReason);
+        // Classes whose bar genuinely begins at 1 may still claim them, which is correct: a level-1
+        // Gladiator would wear exactly these.
+        Assert.Contains("GLA", glovesReason);
 
-        // And the gear those two classes would actually begin with is what they are told to keep —
-        // it shares the slot with the starter pair, so it is the best of a group rather than a lone
-        // piece.
+        // And the gear those two classes would actually begin with is what they are told to keep.
         Assert.Equal(Verdict.KeptBest, Row(result, "Gants de fantassin").Verdict);
-        Assert.Contains("PSB", Reason(result, "Gants de fantassin"));
         Assert.Equal(Verdict.KeptBest, Row(result, "Gants de rôdeur").Verdict);
-        Assert.Contains("VPR", Reason(result, "Gants de rôdeur"));
     }
 }

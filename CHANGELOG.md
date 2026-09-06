@@ -26,6 +26,14 @@ The plugin stands on its own.
 - A release workflow, and a Dalamud plugin repository manifest, so the plugin can be installed
   without building it.
 
+### Tests
+
+- **The property tests now draw from real gear.** A stratified sample of real items and the real
+  class list are committed alongside the tests, so the generated armouries are built from item
+  levels, equip levels and class categories the game actually has — not from invented ranges. The
+  sample itself is guarded: it must keep covering every slot, every flag with a rule attached, and
+  the specific items from every bug reported so far.
+
 ### Fixed
 
 - **Over half the game's classes were invisible on a non-English client.** Class abbreviations were
