@@ -12,6 +12,22 @@ Everything happens in game. There is no companion app, no catalogue file to down
 to feed to anything: the plugin reads the game's own item data directly, so it stays correct across
 patches on its own.
 
+## Where you see it
+
+Three surfaces, none of which need you to leave the game or read a file.
+
+**Hover any piece.** In your Armoury Chest, your bags, or your character sheet — a small panel
+follows the cursor and says whether that piece is still worth keeping and what to do with it. This
+is the answer to "what can I recycle?": you are already looking at the item, so the plugin meets you
+there. Turn it off in the settings if you would rather it stayed quiet.
+
+**`/arsenalcleanup`** opens the full window: everything sorted by slot, in the same order the game
+lays out your chest, with icons, verdicts and reasons. Also on the Open button in Dalamud's plugin
+installer.
+
+**The server info bar** shows `Arsenal 131` when there is something to deal with, and nothing at
+all when there is not. Click it to open the window.
+
 ## What it tells you
 
 For each piece:
@@ -58,7 +74,7 @@ as *replaced* — you can be wearing the worse of two.
 
 - `/arsenalcleanup` — opens the window.
 - `/arsenalcleanup export` — writes a JSON export instead of opening the window.
-- `/arsenalcleanupconfig` — settings (export folder).
+- `/arsenalcleanupconfig` — settings (export folder, and whether the hover panel appears).
 
 `/arsenalexport` and `/arsenalexportconfig`, the names this plugin used before it was renamed, still
 work and still do what they always did. They are hidden from the command list so they do not read as

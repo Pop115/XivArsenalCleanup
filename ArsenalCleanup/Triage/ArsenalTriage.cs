@@ -21,6 +21,16 @@ public sealed record TriageResult(
     /// <summary>Everything the player has no reason to keep, and everything worth a second look.</summary>
     public IEnumerable<TriagedPiece> Actionable =>
         Pieces.Where(p => p.Verdict is Verdict.Obsolete or Verdict.NeedsReview);
+
+    /// <summary>
+    /// Every copy of one item the player owns — usually none or one, but two when the same piece is
+    /// both worn and spare, and those two have different answers.
+    ///
+    /// This is what turns the triage into something usable while looking at the Armoury Chest: the
+    /// game says which item is under the cursor, and this says what was concluded about it.
+    /// </summary>
+    public IReadOnlyList<TriagedPiece> PiecesOf(uint itemId) =>
+        itemId == 0 ? [] : Pieces.Where(p => p.Facts.ItemId == itemId).ToList();
 }
 
 /// <summary>

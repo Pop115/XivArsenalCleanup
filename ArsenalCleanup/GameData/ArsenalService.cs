@@ -24,6 +24,10 @@ public sealed class ArsenalService(
 {
     private readonly GameItemFacts itemFacts = new(data);
 
+    /// <summary>Raised after every refresh, successful or not, so anything displaying a count from
+    /// <see cref="Current"/> updates with it instead of drifting.</summary>
+    public event Action? Refreshed;
+
     public TriageResult Current { get; private set; } = TriageResult.Empty;
 
     /// <summary>What went wrong on the last refresh, or null when it worked.</summary>
@@ -72,6 +76,10 @@ public sealed class ArsenalService(
             // was on screen, plus a line saying what happened.
             LastError = ex.Message;
             log.Error(ex, "Arsenal triage failed.");
+        }
+        finally
+        {
+            Refreshed?.Invoke();
         }
     }
 

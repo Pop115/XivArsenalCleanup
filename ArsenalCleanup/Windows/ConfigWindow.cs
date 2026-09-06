@@ -52,5 +52,15 @@ public class ConfigWindow : Window, IDisposable
             configuration.ExportDirectory = exportDirectoryBuffer;
             configuration.Save();
         }
+
+        ImGui.Separator();
+
+        var hover = configuration.ShowHoverPanel;
+        if (ImGui.Checkbox("Show the verdict when hovering a piece", ref hover))
+        {
+            configuration.ShowHoverPanel = hover;
+            configuration.Save();
+        }
+        ImGui.TextDisabled("Hover anything in your Armoury Chest, bags or gear to see what it is worth.");
     }
 }

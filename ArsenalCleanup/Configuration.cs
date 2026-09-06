@@ -36,6 +36,15 @@ public class Configuration : IPluginConfiguration
     public static string DefaultExportDirectory(string pluginConfigDirectory) =>
         Path.Combine(pluginConfigDirectory, "exports");
 
+    /// <summary>
+    /// Whether to show the verdict panel next to the cursor when hovering a piece.
+    ///
+    /// On by default: it is the whole point of running this in game rather than reading a list. It
+    /// is a setting because it draws over the game's own interface, and anything that does should be
+    /// something the player can turn off.
+    /// </summary>
+    public bool ShowHoverPanel { get; set; } = true;
+
     /// <summary>Persists this configuration through Dalamud. Excluded from coverage: it is a
     /// single call into a service that only exists inside the game process.</summary>
     [ExcludeFromCodeCoverage]

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using ArsenalCleanup.GameData;
 using ArsenalCleanup.Windows;
 using Dalamud.Game.Command;
+using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Inventory;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
@@ -32,6 +34,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
     [PluginService] internal static IPlayerState PlayerState { get; private set; } = null!;
     [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
+    [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
+    [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
@@ -52,6 +56,8 @@ public sealed class Plugin : IDalamudPlugin
     public WindowSystem WindowSystem { get; } = new("ArsenalCleanup");
     private readonly ConfigWindow configWindow;
     private readonly MainWindow mainWindow;
+    private readonly HoverWindow hoverWindow;
+    private readonly IDtrBarEntry dtrEntry;
     private readonly ArsenalService arsenal;
     private readonly string defaultExportDirectory;
 
@@ -64,8 +70,17 @@ public sealed class Plugin : IDalamudPlugin
 
         configWindow = new ConfigWindow(this, defaultExportDirectory);
         mainWindow = new MainWindow(arsenal, TextureProvider, Configuration, defaultExportDirectory, () => configWindow.Toggle());
+        hoverWindow = new HoverWindow(arsenal, Configuration, GameGui);
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(mainWindow);
+        WindowSystem.AddWindow(hoverWindow);
+
+        // The server info bar is where a player already glances for standing information, and it
+        // costs no screen space of its own. It answers "is there anything to do?" without opening
+        // anything, and opens the window when there is.
+        dtrEntry = DtrBar.Get("Arsenal Cleanup");
+        dtrEntry.OnClick = _ => ToggleMainUi();
+        UpdateDtrEntry();
 
         CommandManager.AddHandler(MainCommand, new CommandInfo(OnMainCommand)
         {
@@ -94,6 +109,8 @@ public sealed class Plugin : IDalamudPlugin
             });
         }
 
+        arsenal.Refreshed += UpdateDtrEntry;
+
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
@@ -101,6 +118,9 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        arsenal.Refreshed -= UpdateDtrEntry;
+        dtrEntry.Remove();
+
         PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
@@ -108,6 +128,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.RemoveAllWindows();
         configWindow.Dispose();
         mainWindow.Dispose();
+        hoverWindow.Dispose();
 
         CommandManager.RemoveHandler(MainCommand);
         CommandManager.RemoveHandler(ConfigCommand);
@@ -159,7 +180,8 @@ public sealed class Plugin : IDalamudPlugin
             var worn = 0;
             foreach (var piece in arsenal.LastRead) if (piece.IsEquipped) worn++;
 
-            ChatGui.Print($"Arsenal Cleanup: {arsenal.LastRead.Count} piece(s) ({worn} worn) written to {path}.");
+            ChatGui.Print($"Arsenal Cleanup: {arsenal.LastRead.Count} piece(s) ({worn} worn) written to {path}. "
+                        + $"Type {MainCommand} to see what is worth keeping without leaving the game.");
         }
         catch (Exception ex)
         {
@@ -187,5 +209,19 @@ public sealed class Plugin : IDalamudPlugin
             }
             return pieces;
         }
+    }
+
+    /// <summary>
+    /// Keeps the server info bar showing how much is left to deal with. Hidden entirely when there
+    /// is nothing — a bar entry reading "0" is just clutter.
+    /// </summary>
+    private void UpdateDtrEntry()
+    {
+        var actionable = arsenal.Current.Actionable.Count();
+        dtrEntry.Shown = actionable > 0;
+        if (actionable == 0) return;
+
+        dtrEntry.Text = $"Arsenal {actionable}";
+        dtrEntry.Tooltip = $"{actionable} piece(s) to deal with. Click to open Arsenal Cleanup.";
     }
 }

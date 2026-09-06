@@ -16,6 +16,11 @@ The plugin stands on its own.
   game's own sheets, and job levels from the player state. Nothing has to be downloaded or kept in
   step with patches.
 - `/arsenalcleanup` opens the window; `/arsenalcleanup export` writes the JSON export.
+- **A verdict panel that follows the cursor.** Hover a piece anywhere the game shows one and it
+  says whether to keep it and how to part with it — the point of running this in game rather than
+  reading a list somewhere else. Switchable in the settings.
+- **A server info bar entry** showing how much is left to deal with, hidden when there is nothing,
+  and opening the window when clicked.
 - Item icons in the window: a player recognises a piece by its icon long before they finish
   reading its name.
 - A release workflow, and a Dalamud plugin repository manifest, so the plugin can be installed
