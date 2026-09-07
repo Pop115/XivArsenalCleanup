@@ -28,3 +28,4 @@ dist/
 XivEffigy/tests/fixtures/*.glb
 XivEffigy/dist/
 XivEffigy/corpus/
+XivEffigy/.blender/
