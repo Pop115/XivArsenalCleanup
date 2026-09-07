@@ -23,3 +23,7 @@ dist/
 .mypy_cache/
 .ruff_cache/
 .coverage
+
+# Generated fixtures — the script is committed, its output is not.
+XivEffigy/tests/fixtures/*.glb
+XivEffigy/dist/
