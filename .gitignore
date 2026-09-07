@@ -27,3 +27,4 @@ dist/
 # Generated fixtures — the script is committed, its output is not.
 XivEffigy/tests/fixtures/*.glb
 XivEffigy/dist/
+XivEffigy/corpus/
