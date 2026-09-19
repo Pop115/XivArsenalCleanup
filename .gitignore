@@ -11,3 +11,21 @@ TestResults/
 .vs/
 .idea/
 *.user
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Generated fixtures — the script is committed, its output is not.
+XivEffigy/tests/fixtures/*.glb
+XivEffigy/dist/
+XivEffigy/corpus/
+XivEffigy/.blender/

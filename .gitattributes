@@ -13,3 +13,7 @@
 *.md text eol=lf
 *.yml text eol=lf
 *.json text eol=lf
+
+*.py text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
