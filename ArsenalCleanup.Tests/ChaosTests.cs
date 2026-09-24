@@ -26,7 +26,8 @@ public sealed class ChaosTests
     private const int Runs = 400;
 
     /// <summary>
-    /// The real forty-three classes, with the two abbreviations and the level each begins at.
+    /// The real classes, with the two abbreviations and the level each begins at — Beastmaster
+    /// included, which is what puts the defence rule under the generator as well.
     /// </summary>
     private static readonly JobDirectory Jobs = RealGameData.Jobs;
 
@@ -143,10 +144,67 @@ public sealed class ChaosTests
             foreach (var piece in result.Pieces.Where(p => p.Verdict == Verdict.Obsolete))
             {
                 Assert.True(piece.ReplacedBy is not null, $"seed {seed}: {piece.Facts.Name} replaced by nothing");
+
+                // "Better" by the same yardstick the verdict was reached with, which for a
+                // Beastmaster is not the item level — asserting on item level here would have the
+                // property test disagree with the rule it is meant to be guarding.
                 Assert.True(
-                    piece.ReplacedBy!.ItemLevel > piece.Facts.ItemLevel,
+                    piece.Ranking.Beats(piece.ReplacedBy!, piece.Facts),
                     $"seed {seed}: {piece.Facts.Name} 'replaced' by something no better");
                 Assert.Equal(piece.Facts.Slot, piece.ReplacedBy.Slot);
+            }
+        }
+    }
+
+    [Fact]
+    public void NeverLeavesACharacterAHandShort()
+    {
+        // Two rings are worn at once, so a ring is only spare once two better ones can be. This is
+        // the invariant behind that rule, checked against whatever the generator throws up:
+        // duplicates, level-90 rings on a level-3 class, forty copies of the same band.
+        for (var seed = 0; seed < Runs; seed++)
+        {
+            var (pieces, levels) = Armoury(new Random(seed));
+            var result = ArsenalTriage.Run(pieces, levels);
+
+            foreach (var piece in result.Pieces.Where(p => p.Verdict == Verdict.Obsolete && p.Facts.Slot == "ring"))
+            {
+                var job = piece.DecidingJob!.Value;
+                var level = piece.DecidingJobLevel ?? 0;
+
+                // Everything that beats it and is either wearable today or unlocks no later — a
+                // superset of both routes to "replaced", so two of them is the weakest true claim.
+                var ahead = pieces.Count(other =>
+                    other.Facts is { Slot: "ring" } facts
+                    && facts.JobIds.Contains(job)
+                    && piece.Ranking.Beats(facts, piece.Facts)
+                    && (facts.EquipLevel <= level || facts.EquipLevel <= piece.Facts.EquipLevel));
+
+                Assert.True(
+                    ahead >= SlotCapacity.For("ring"),
+                    $"seed {seed}: {piece.Facts.Name} called replaced with only {ahead} better ring(s)");
+            }
+        }
+    }
+
+    [Fact]
+    public void NeverTellsABeastmasterToGiveUpDefence()
+    {
+        // The job's own rule, as a property: nothing it is told to part with is sturdier than what
+        // replaces it. Where a piece is shared with another class the merge may keep it for that
+        // class instead — which can only ever keep more, never less.
+        for (var seed = 0; seed < Runs; seed++)
+        {
+            var (pieces, levels) = Armoury(new Random(seed));
+            var result = ArsenalTriage.Run(pieces, levels);
+
+            foreach (var piece in result.Pieces.Where(p =>
+                p.Verdict == Verdict.Obsolete && p.DecidingJob == KnownJobs.Beastmaster))
+            {
+                Assert.True(
+                    piece.ReplacedBy!.DefencePhysical >= piece.Facts.DefencePhysical
+                    && piece.ReplacedBy.DefenceMagical >= piece.Facts.DefenceMagical,
+                    $"seed {seed}: {piece.Facts.Name} traded away defence for {piece.ReplacedBy.Name}");
             }
         }
     }
@@ -262,7 +320,7 @@ public sealed class ChaosTests
     [Fact]
     public void HandlesAnItemNoClassCanUse()
     {
-        var orphan = new GearFacts(1, "Orphan", "main", 100, 50, 1, [], false, false, false);
+        var orphan = new GearFacts(1, "Orphan", "main", 100, 50, 1, [], 0, 0, false, false, false);
 
         var result = ArsenalTriage.Run([new OwnedPiece(1, "main", 0, false, orphan)], new Dictionary<uint, int>());
 
@@ -276,8 +334,8 @@ public sealed class ChaosTests
     {
         // Before the player state has loaded, every class reads as absent. Two pieces, so the
         // comparison is actually attempted rather than short-circuited by "the only one you own".
-        var a = new GearFacts(1, "A", "main", 100, 50, 1, [1, 2], false, false, false);
-        var b = new GearFacts(2, "B", "main", 200, 50, 1, [1, 2], false, false, false);
+        var a = new GearFacts(1, "A", "main", 100, 50, 1, [1, 2], 0, 0, false, false, false);
+        var b = new GearFacts(2, "B", "main", 200, 50, 1, [1, 2], 0, 0, false, false, false);
 
         var result = ArsenalTriage.Run(
             [new OwnedPiece(1, "main", 0, false, a), new OwnedPiece(2, "main", 1, false, b)],

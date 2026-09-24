@@ -124,14 +124,15 @@ public sealed class ClassifierTests
     public void JudgesAPieceOncePerJobThatCanUseIt()
     {
         // A shared accessory can genuinely be obsolete for one job and needed by another, so the two
-        // answers have to be produced separately before anything merges them.
-        var shared = Facts(id: 1, name: "Shared ring", slot: "ring", itemLevel: 10, jobs: [Pugilist, Archer]);
-        var betterForPugilist = Facts(id: 2, name: "Pugilist ring", slot: "ring", itemLevel: 20, jobs: [Pugilist]);
+        // answers have to be produced separately before anything merges them. A necklace rather than
+        // a ring, because only one is worn: rings have their own rule and would muddle this one.
+        var shared = Facts(id: 1, name: "Shared choker", slot: "neck", itemLevel: 10, jobs: [Pugilist, Archer]);
+        var betterForPugilist = Facts(id: 2, name: "Pugilist choker", slot: "neck", itemLevel: 20, jobs: [Pugilist]);
 
         var judged = Classifier.Classify(
             [Owned(shared), Owned(betterForPugilist)], Levels((Pugilist, 50), (Archer, 50)));
 
-        var sharedRows = judged.Where(j => j.Facts.Name == "Shared ring").ToList();
+        var sharedRows = judged.Where(j => j.Facts.Name == "Shared choker").ToList();
         Assert.Equal(2, sharedRows.Count);
         Assert.Equal(Verdict.Obsolete, sharedRows.Single(r => r.JobId == Pugilist).Verdict);
         Assert.Equal(Verdict.KeptOnly, sharedRows.Single(r => r.JobId == Archer).Verdict);
@@ -235,6 +236,187 @@ public sealed class ClassifierTests
             [Owned(worn, equipped: true), Owned(spare)], Levels((Pugilist, 50)));
 
         Assert.Equal(Verdict.Obsolete, Single(judged, "Worn").Verdict);
+    }
+
+    [Fact]
+    public void KeepsARing_WhenOnlyOneBetterOneCanBeWorn()
+    {
+        // A character wears two rings. One better ring does not free the other hand, so the piece it
+        // beat is still the one being worn there — and telling someone to bin it is telling them to
+        // go a ring short.
+        var ordinary = Facts(id: 1, name: "Ordinary ring", slot: "ring", itemLevel: 10, equipLevel: 10);
+        var better = Facts(id: 2, name: "Better ring", slot: "ring", itemLevel: 50, equipLevel: 10);
+
+        var judged = Classifier.Classify([Owned(ordinary), Owned(better)], Levels((Pugilist, 50)));
+
+        Assert.Equal(Verdict.KeptBest, Single(judged, "Ordinary ring").Verdict);
+        Assert.Equal(Verdict.KeptBest, Single(judged, "Better ring").Verdict);
+        Assert.All(judged, row => Assert.Equal(DisposalMethod.None, row.Disposal));
+    }
+
+    [Fact]
+    public void LetsARingGo_OnceTwoBetterOnesCanBeWorn()
+    {
+        // Two better rings do fill both hands, and only then is the third one spare.
+        var ordinary = Facts(id: 1, name: "Ordinary ring", slot: "ring", itemLevel: 10, equipLevel: 10);
+        var good = Facts(id: 2, name: "Good ring", slot: "ring", itemLevel: 40, equipLevel: 10);
+        var better = Facts(id: 3, name: "Better ring", slot: "ring", itemLevel: 50, equipLevel: 10);
+
+        var judged = Classifier.Classify(
+            [Owned(ordinary), Owned(good), Owned(better)], Levels((Pugilist, 50)));
+
+        var replaced = Single(judged, "Ordinary ring");
+        Assert.Equal(Verdict.Obsolete, replaced.Verdict);
+        Assert.Equal(ReasonCode.SupersededNow, replaced.Reason);
+    }
+
+    [Fact]
+    public void NamesTheWeakerOfTheTwoRings_ThatPushedItOut()
+    {
+        // For an ordinary slot the replacement named is the best piece owned. For rings the tighter
+        // and more convincing statement is the second best: even that one beats it.
+        var ordinary = Facts(id: 1, name: "Ordinary ring", slot: "ring", itemLevel: 10, equipLevel: 10);
+        var good = Facts(id: 2, name: "Good ring", slot: "ring", itemLevel: 40, equipLevel: 10);
+        var best = Facts(id: 3, name: "Best ring", slot: "ring", itemLevel: 50, equipLevel: 10);
+
+        var judged = Classifier.Classify(
+            [Owned(ordinary), Owned(good), Owned(best)], Levels((Pugilist, 50)));
+
+        Assert.Equal("Good ring", Single(judged, "Ordinary ring").ReplacedBy?.Name);
+    }
+
+    [Fact]
+    public void CountsOnlyTheRingsThatCanActuallyBeWornToday()
+    {
+        // Two better rings, but one of them is fifty levels away: only one hand is really spoken for.
+        var ordinary = Facts(id: 1, name: "Ordinary ring", slot: "ring", itemLevel: 10, equipLevel: 10);
+        var usable = Facts(id: 2, name: "Usable ring", slot: "ring", itemLevel: 40, equipLevel: 20);
+        var faraway = Facts(id: 3, name: "Far-off ring", slot: "ring", itemLevel: 90, equipLevel: 90);
+
+        var judged = Classifier.Classify(
+            [Owned(ordinary), Owned(usable), Owned(faraway)], Levels((Pugilist, 40)));
+
+        Assert.Equal(Verdict.KeptBest, Single(judged, "Ordinary ring").Verdict);
+    }
+
+    [Fact]
+    public void AFutureRingIsKept_UnlessTwoBetterOnesUnlockNoLater()
+    {
+        var future = Facts(id: 1, name: "Future ring", slot: "ring", itemLevel: 30, equipLevel: 60);
+        var earlier = Facts(id: 2, name: "Earlier ring", slot: "ring", itemLevel: 50, equipLevel: 55);
+
+        var judged = Classifier.Classify([Owned(future), Owned(earlier)], Levels((Pugilist, 20)));
+
+        // One earlier ring is not enough to make the later one pointless: both will be worn.
+        Assert.Equal(Verdict.KeptUntilLevel, Single(judged, "Future ring").Verdict);
+
+        var second = Facts(id: 3, name: "Second earlier ring", slot: "ring", itemLevel: 45, equipLevel: 50);
+        var withTwo = Classifier.Classify(
+            [Owned(future), Owned(earlier), Owned(second)], Levels((Pugilist, 20)));
+
+        Assert.Equal(Verdict.Obsolete, Single(withTwo, "Future ring").Verdict);
+        Assert.Equal(ReasonCode.OutclassedByEarlier, Single(withTwo, "Future ring").Reason);
+    }
+
+    [Fact]
+    public void KeepsBothRings_WhenTwoAreAllYouOwn()
+    {
+        var worn = Facts(id: 1, name: "Worn ring", slot: "ring", itemLevel: 10, equipLevel: 10);
+        var spare = Facts(id: 2, name: "Spare ring", slot: "ring", itemLevel: 400, equipLevel: 10);
+
+        var judged = Classifier.Classify(
+            [Owned(worn, equipped: true), Owned(spare)], Levels((Pugilist, 90)));
+
+        Assert.All(judged, row => Assert.NotEqual(Verdict.Obsolete, row.Verdict));
+    }
+
+    [Fact]
+    public void KeepsABeastmastersSturdierPiece_WhenTheUpgradeIsOnlyHigherLevelled()
+    {
+        // Real coats, either of which any class can wear: eight item levels apart, and the higher one
+        // defends less. Judged the ordinary way the first is scrap; judged as Beastmaster it is not.
+        var sturdy = Facts(id: 1, name: "Moth-eaten Coatee", slot: "body", itemLevel: 32, equipLevel: 37,
+            jobs: [Beastmaster], defence: 36, magicDefence: 62);
+        var flimsy = Facts(id: 2, name: "Vintage Coatee", slot: "body", itemLevel: 40, equipLevel: 37,
+            jobs: [Beastmaster], defence: 30, magicDefence: 61);
+
+        var judged = Classifier.Classify([Owned(sturdy), Owned(flimsy)], Levels((Beastmaster, 50)));
+
+        Assert.Equal(Verdict.KeptBest, Single(judged, "Moth-eaten Coatee").Verdict);
+        Assert.Equal(Verdict.KeptBest, Single(judged, "Vintage Coatee").Verdict);
+    }
+
+    [Fact]
+    public void TheSamePairIsStillAnUpgradeForEveryOtherJob()
+    {
+        // The defence rule is Beastmaster's alone. Nothing else changes for anybody else.
+        var sturdy = Facts(id: 1, name: "Moth-eaten Coatee", slot: "body", itemLevel: 32, equipLevel: 37,
+            jobs: [Pugilist], defence: 36, magicDefence: 62);
+        var flimsy = Facts(id: 2, name: "Vintage Coatee", slot: "body", itemLevel: 40, equipLevel: 37,
+            jobs: [Pugilist], defence: 30, magicDefence: 61);
+
+        var judged = Classifier.Classify([Owned(sturdy), Owned(flimsy)], Levels((Pugilist, 50)));
+
+        Assert.Equal(Verdict.Obsolete, Single(judged, "Moth-eaten Coatee").Verdict);
+    }
+
+    [Fact]
+    public void StillLetsBeastmasterGearGo_WhenSomethingBeatsItAtEverything()
+    {
+        // The rule is not a blanket refusal to decide: a piece that is sturdier and no lower levelled
+        // replaces one that is neither, and this pair is invisible to an item-level comparison.
+        var lesser = Facts(id: 1, name: "Patrician's Coatee", slot: "body", itemLevel: 50, equipLevel: 50,
+            jobs: [Beastmaster], defence: 42, magicDefence: 85);
+        var sturdier = Facts(id: 2, name: "Dated Linen Coatee", slot: "body", itemLevel: 50, equipLevel: 50,
+            jobs: [Beastmaster], defence: 58, magicDefence: 102);
+
+        var judged = Classifier.Classify([Owned(lesser), Owned(sturdier)], Levels((Beastmaster, 50)));
+
+        var replaced = Single(judged, "Patrician's Coatee");
+        Assert.Equal(Verdict.Obsolete, replaced.Verdict);
+        Assert.Equal("Dated Linen Coatee", replaced.ReplacedBy?.Name);
+        Assert.Equal(Verdict.KeptBest, Single(judged, "Dated Linen Coatee").Verdict);
+    }
+
+    [Fact]
+    public void NamesTheSturdiestPiece_WhenSeveralBeatABeastmastersGear()
+    {
+        var scrap = Facts(id: 1, name: "Scrap", slot: "body", itemLevel: 50, equipLevel: 50,
+            jobs: [Beastmaster], defence: 40);
+        var sturdy = Facts(id: 2, name: "Sturdy", slot: "body", itemLevel: 50, equipLevel: 50,
+            jobs: [Beastmaster], defence: 60);
+        var sturdiest = Facts(id: 3, name: "Sturdiest", slot: "body", itemLevel: 50, equipLevel: 50,
+            jobs: [Beastmaster], defence: 90);
+
+        var judged = Classifier.Classify(
+            [Owned(scrap), Owned(sturdy), Owned(sturdiest)], Levels((Beastmaster, 50)));
+
+        Assert.Equal("Sturdiest", Single(judged, "Scrap").ReplacedBy?.Name);
+    }
+
+    [Fact]
+    public void ABeastmastersWeaponIsJudgedOnItemLevelLikeAnyOther()
+    {
+        // No weapon carries defence, so there is nothing for the rule to prefer and it gets out of
+        // the way rather than declaring every axe incomparable.
+        var old = Facts(id: 1, name: "Beast Herder's Hand Axe", itemLevel: 5, equipLevel: 1, jobs: [Beastmaster]);
+        var better = Facts(id: 2, name: "Beastmaster's Hand Axe", itemLevel: 90, equipLevel: 50, jobs: [Beastmaster]);
+
+        var judged = Classifier.Classify([Owned(old), Owned(better)], Levels((Beastmaster, 50)));
+
+        Assert.Equal(Verdict.Obsolete, Single(judged, "Beast Herder's Hand Axe").Verdict);
+        Assert.Equal("Beastmaster's Hand Axe", Single(judged, "Beast Herder's Hand Axe").ReplacedBy?.Name);
+    }
+
+    [Fact]
+    public void ABeastmasterWearsTwoRingsToo()
+    {
+        var ordinary = Facts(id: 1, name: "Ordinary ring", slot: "ring", itemLevel: 10, jobs: [Beastmaster]);
+        var better = Facts(id: 2, name: "Better ring", slot: "ring", itemLevel: 50, jobs: [Beastmaster]);
+
+        var judged = Classifier.Classify([Owned(ordinary), Owned(better)], Levels((Beastmaster, 50)));
+
+        Assert.Equal(Verdict.KeptBest, Single(judged, "Ordinary ring").Verdict);
     }
 
     private static JudgedPiece Single(System.Collections.Generic.IEnumerable<JudgedPiece> judged, string name) =>

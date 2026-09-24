@@ -20,6 +20,7 @@ public sealed class ReasonWordingTests
         new JobInfo(20, "MNK", "MOI", 2),
         new JobInfo(38, "DNC", "DNS", 38),
         new JobInfo(40, "SGE", "SAG", 40),
+        new JobInfo(Beastmaster, "BST", "DRE", Beastmaster),
     ]);
 
     private static string Reason(IReadOnlyList<OwnedPiece> owned, params (uint Job, int Level)[] levels) =>
@@ -184,14 +185,110 @@ public sealed class ReasonWordingTests
     [Fact]
     public void GivesEveryReasonCodeWordingOfItsOwn()
     {
-        // Nothing on screen should ever read as an enum name.
-        var piece = ArsenalTriage.Run([Owned(Facts(id: 1))], Levels((Pugilist, 50))).Pieces[0];
+        // Nothing on screen should ever read as an enum name. Swept over a piece of a slot worn once
+        // and one worn twice, and with the classes stripped out, because each of those has wording
+        // of its own to fall back through.
+        var single = ArsenalTriage.Run([Owned(Facts(id: 1))], Levels((Pugilist, 50))).Pieces[0];
+        var ring = ArsenalTriage.Run(
+            [Owned(Facts(id: 1, slot: "ring"))], Levels((Pugilist, 50))).Pieces[0];
 
-        foreach (var code in System.Enum.GetValues<ReasonCode>())
+        foreach (var piece in new[] { single, ring, single with { RelevantJobs = [] }, ring with { RelevantJobs = [] } })
         {
-            var worded = Presentation.Reason(piece with { Reason = code }, Jobs);
-            Assert.NotEmpty(worded);
-            Assert.DoesNotContain(code.ToString(), worded, System.StringComparison.Ordinal);
+            foreach (var code in System.Enum.GetValues<ReasonCode>())
+            {
+                var worded = Presentation.Reason(piece with { Reason = code }, Jobs);
+                Assert.NotEmpty(worded);
+                Assert.DoesNotContain(code.ToString(), worded, System.StringComparison.Ordinal);
+            }
         }
     }
+
+    [Fact]
+    public void SaysWhyARingSurvivesSomethingBetter()
+    {
+        // "Your best for this slot" would be a lie about a ring that is plainly not the best one
+        // owned. What is true, and what the player needs, is that both are worn.
+        var ordinary = Facts(id: 1, name: "Ordinary ring", slot: "ring", itemLevel: 10, jobs: [Pugilist]);
+        var better = Facts(id: 2, name: "Better ring", slot: "ring", itemLevel: 50, jobs: [Pugilist]);
+
+        var reason = ReasonFor("Ordinary ring", [Owned(ordinary), Owned(better)], (Pugilist, 50));
+
+        Assert.Contains("two at once", reason);
+        Assert.Contains("PGL", reason);
+    }
+
+    [Fact]
+    public void SaysWhyARingIsFinallySpare()
+    {
+        var ordinary = Facts(id: 1, name: "Ordinary ring", slot: "ring", itemLevel: 10, jobs: [Pugilist]);
+        var good = Facts(id: 2, name: "Good ring", slot: "ring", itemLevel: 40, jobs: [Pugilist]);
+        var best = Facts(id: 3, name: "Best ring", slot: "ring", itemLevel: 50, jobs: [Pugilist]);
+
+        var reason = ReasonFor(
+            "Ordinary ring", [Owned(ordinary), Owned(good), Owned(best)], (Pugilist, 50));
+
+        Assert.Contains("two at once", reason);
+        Assert.Contains("Good ring", reason);
+    }
+
+    [Fact]
+    public void SaysWhyAFutureRingIsPointless_WithoutClaimingOneRingReplacedIt()
+    {
+        var future = Facts(id: 1, name: "Future ring", slot: "ring", itemLevel: 30, equipLevel: 60, jobs: [Pugilist]);
+        var earlier = Facts(id: 2, name: "Earlier ring", slot: "ring", itemLevel: 50, equipLevel: 55, jobs: [Pugilist]);
+        var second = Facts(id: 3, name: "Second ring", slot: "ring", itemLevel: 45, equipLevel: 50, jobs: [Pugilist]);
+
+        var reason = ReasonFor(
+            "Future ring", [Owned(future), Owned(earlier), Owned(second)], (Pugilist, 20));
+
+        Assert.Contains("two at once", reason);
+        Assert.Contains("unlock no later", reason);
+    }
+
+    [Fact]
+    public void NamesTheYardstickAVerdictWasActuallyReachedWith()
+    {
+        // A Beastmaster reading "replaced by something at a higher item level" would have no way to
+        // tell whether the plugin had applied the defence rule at all.
+        var lesser = Facts(id: 1, name: "Lesser coat", slot: "body", itemLevel: 50,
+            jobs: [Beastmaster], defence: 42, magicDefence: 85);
+        var sturdier = Facts(id: 2, name: "Sturdier coat", slot: "body", itemLevel: 50,
+            jobs: [Beastmaster], defence: 58, magicDefence: 102);
+
+        var reason = ReasonFor("Lesser coat", [Owned(lesser), Owned(sturdier)], (Beastmaster, 50));
+
+        Assert.Contains("Sturdier coat", reason);
+        Assert.Contains("defence 58 physical and 102 magical", reason);
+        Assert.Contains("item level 50", reason);
+    }
+
+    [Fact]
+    public void SaysWhatABeastmastersBestPieceIsBestAt()
+    {
+        var lesser = Facts(id: 1, name: "Lesser coat", slot: "body", itemLevel: 50, jobs: [Beastmaster], defence: 42);
+        var sturdier = Facts(id: 2, name: "Sturdier coat", slot: "body", itemLevel: 50, jobs: [Beastmaster], defence: 58);
+
+        var reason = ReasonFor("Sturdier coat", [Owned(lesser), Owned(sturdier)], (Beastmaster, 50));
+
+        Assert.Contains("best defence", reason);
+        Assert.Contains("DRE", reason);
+    }
+
+    [Fact]
+    public void TheLineUnderAPieceFollowsTheSameYardstickAsItsVerdict()
+    {
+        var ordinary = Facts(id: 1, name: "Ordinary", itemLevel: 50, equipLevel: 45, jobs: [Pugilist]);
+        var beastmasters = Facts(id: 2, name: "Furs", slot: "body", itemLevel: 90, equipLevel: 50,
+            jobs: [Beastmaster], defence: 177);
+
+        var result = ArsenalTriage.Run(
+            [Owned(ordinary), Owned(beastmasters)], Levels((Pugilist, 50), (Beastmaster, 50)));
+
+        var ordinaryRow = result.Pieces.First(p => p.Facts.Name == "Ordinary");
+        var beastmasterRow = result.Pieces.First(p => p.Facts.Name == "Furs");
+
+        Assert.Equal("item level 50, wearable from level 45", Presentation.Specs(ordinaryRow));
+        Assert.Equal("defence 177, item level 90, wearable from level 50", Presentation.Specs(beastmasterRow));
+    }
+
 }

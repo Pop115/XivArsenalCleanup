@@ -21,15 +21,14 @@ namespace ArsenalCleanup.GameData;
 public sealed class GameItemFacts
 {
     private readonly IDataManager data;
-    private readonly JobDirectory jobs;
+    private readonly JobEquipRights equipRights;
     private readonly Dictionary<uint, GearFacts?> cache = [];
-    private readonly Dictionary<uint, List<uint>> jobsByCategory = [];
     private readonly HashSet<uint> armoireEligible;
 
-    public GameItemFacts(IDataManager data, JobDirectory jobs)
+    public GameItemFacts(IDataManager data, JobDirectory jobs, IPluginLog log)
     {
         this.data = data;
-        this.jobs = jobs;
+        equipRights = JobEquipRights.Read(data, jobs, log);
 
         // The Cabinet sheet is the game's own list of what the Armoire can store permanently. It is
         // small (a few thousand rows) and never changes at runtime, so it is read once.
@@ -75,6 +74,8 @@ public sealed class GameItemFacts
             EquipLevel: item.LevelEquip,
             IconId: item.Icon,
             JobIds: JobIdsFor(item),
+            DefencePhysical: (ushort)item.DefensePhys,
+            DefenceMagical: (ushort)item.DefenseMag,
             IsRelic: RelicDetection.LooksLikeRelic(item.Description.ExtractText()),
             IsDesynthesisable: item.Desynth > 0,
             IsArmoireEligible: armoireEligible.Contains(itemId));
@@ -83,29 +84,14 @@ public sealed class GameItemFacts
     /// <summary>
     /// Every ClassJob row id allowed to equip this item.
     ///
-    /// ClassJobCategory carries one boolean column per class, named after its *English*
-    /// abbreviation, so that is the name each class is looked up by — never the translated one the
-    /// player sees. Reading a column by a French abbreviation matches nothing, and an item usable by
-    /// half the game then looks usable by nobody.
-    ///
-    /// Cached per category row: an armoury of several hundred pieces draws on a few dozen distinct
-    /// categories, and walking every class for each piece would repeat the same answer hundreds of
-    /// times.
+    /// The mapping from a category to its classes is worked out once for the whole sheet — see
+    /// <see cref="JobEquipRights"/>, which is also where the awkwardness lives: the columns are
+    /// named after *English* abbreviations, and a class the library has not caught up with yet has
+    /// no name at all.
     /// </summary>
     private List<uint> JobIdsFor(Item item)
     {
         var category = item.ClassJobCategory.ValueNullable;
-        if (category is null) return [];
-
-        if (jobsByCategory.TryGetValue(category.Value.RowId, out var cached)) return cached;
-
-        var allowed = new List<uint>();
-        foreach (var job in jobs.Jobs)
-        {
-            if (ClassJobCategoryFlags.IsSet(category.Value, job.LookupAbbreviation)) allowed.Add(job.Id);
-        }
-
-        jobsByCategory[category.Value.RowId] = allowed;
-        return allowed;
+        return category is null ? [] : [.. equipRights.For(category.Value.RowId)];
     }
 }

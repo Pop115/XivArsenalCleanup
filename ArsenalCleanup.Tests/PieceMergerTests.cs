@@ -18,8 +18,8 @@ public sealed class PieceMergerTests
     {
         var facts = Facts(id: 1, name: name);
         return new JudgedPiece(
-            Owned(facts, equipped, position), facts, jobId, JobLevel: 50, verdict,
-            ReplacedBy: null, Reason: ReasonCode.BestEquippable, disposal);
+            Owned(facts, equipped, position), facts, jobId, JobLevel: 50, GearRanking.For(jobId), verdict,
+            ReplacedBy: null, Reason: ReasonCode.BestEquippable, Disposal: disposal);
     }
 
     [Fact]

@@ -89,9 +89,18 @@ regeneration that quietly stopped sampling relics would otherwise leave the prop
 while testing nothing in particular.
 
 The sample records the game version it came from, so a failure after a patch is recognisable as
-staleness rather than as a bug. Regenerating it is currently a manual job — there is no tool for it
-in the repository yet, which is tracked as an issue. Whatever produces the next sample, the guard
-tests are what say whether it is still representative.
+staleness rather than as a bug. To rebuild it from an installed copy of the game:
+
+```
+dotnet run --project tools/FixtureBuilder -- "<game root>" ArsenalCleanup.Tests/TestData/real-items.json
+```
+
+Every id already in the sample is looked up again, so a refresh changes the facts and never the
+stratification; ids passed after the fixture path are added to it, which is how a new job's gear
+gets in. See [tools/FixtureBuilder/README.md](tools/FixtureBuilder/README.md). The tool is outside
+`ArsenalCleanup.slnx` on purpose — it needs the game installed, and CI does not have it.
+
+Whatever produces the next sample, the guard tests are what say whether it is still representative.
 
 ## Style
 

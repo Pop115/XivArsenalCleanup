@@ -39,11 +39,13 @@ public enum ReasonCode
 
 /// <summary>One piece judged for one job that can use it.</summary>
 /// <param name="ReplacedBy">The piece that supersedes it — set only when superseded, including when a relic guard downgraded the verdict.</param>
+/// <param name="Ranking">What "better" meant for this job, so the wording can name the yardstick the verdict actually used.</param>
 public sealed record JudgedPiece(
     OwnedPiece Piece,
     GearFacts Facts,
     uint JobId,
     int? JobLevel,
+    GearRanking Ranking,
     Verdict Verdict,
     GearFacts? ReplacedBy,
     ReasonCode Reason,
@@ -61,6 +63,12 @@ public sealed record JudgedPiece(
 /// equippable at the character's current level*. Comparing item levels alone is what makes a naive
 /// triage recommend throwing away a level-32 bow in favour of a level-90 one the character cannot
 /// hold yet — leaving them weaponless for 49 levels.
+///
+/// Two things decide what "better" and "enough of it" mean, and neither is a constant.
+/// <see cref="GearRanking"/> says what better means for the job being judged — item level for
+/// almost every job, defence for Beastmaster. <see cref="SlotCapacity"/> says how many better
+/// pieces it takes to displace one: a character wears two rings, so a single better ring leaves the
+/// ring it beat still on the other hand.
 ///
 /// Soul crystals are the caller's business: they are never gear to triage and should be filtered
 /// out before calling. Relics are this function's — an obsolete verdict on one is always downgraded
@@ -125,6 +133,7 @@ public static class Classifier
         IReadOnlyDictionary<uint, int> jobLevels)
     {
         var facts = piece.Facts!;
+        var ranking = GearRanking.For(jobId);
 
         if (!jobLevels.TryGetValue(jobId, out var reported))
         {
@@ -132,11 +141,15 @@ public static class Classifier
         }
 
         var level = reported;
+        var capacity = SlotCapacity.For(facts.Slot);
         var others = group.Where(p => !ReferenceEquals(p, piece)).ToList();
 
-        // Beaten by something strictly better that can be equipped right now.
-        var supersededNow = Best(others.Where(o =>
-            o.Facts!.ItemLevel > facts.ItemLevel && o.Facts.EquipLevel <= level));
+        // Displaced by better pieces that can be worn right now — and there have to be enough of
+        // them to fill every copy of the slot, or this piece is still filling one.
+        var supersededNow = Displacing(
+            others.Where(o => ranking.Beats(o.Facts!, facts) && o.Facts!.EquipLevel <= level),
+            capacity,
+            ranking);
         if (supersededNow is not null)
         {
             return Judge(piece, jobId, jobLevels, Verdict.Obsolete, supersededNow, ReasonCode.SupersededNow);
@@ -144,10 +157,12 @@ public static class Classifier
 
         if (facts.EquipLevel > level)
         {
-            // Not reachable yet. Only truly obsolete if a future piece dominates it: strictly
-            // better, and available at least as early — otherwise this one still bridges the gap.
-            var dominated = Best(others.Where(o =>
-                o.Facts!.ItemLevel > facts.ItemLevel && o.Facts.EquipLevel <= facts.EquipLevel));
+            // Not reachable yet. Only truly obsolete if enough future pieces dominate it: better,
+            // and available at least as early — otherwise this one still bridges the gap.
+            var dominated = Displacing(
+                others.Where(o => ranking.Beats(o.Facts!, facts) && o.Facts!.EquipLevel <= facts.EquipLevel),
+                capacity,
+                ranking);
             if (dominated is not null)
             {
                 return Judge(piece, jobId, jobLevels, Verdict.Obsolete, dominated, ReasonCode.OutclassedByEarlier);
@@ -160,34 +175,27 @@ public static class Classifier
     }
 
     /// <summary>
-    /// The single best candidate among pieces that already beat the one being judged, or null.
+    /// The piece that actually pushes this one out of use, or null when too few do.
     ///
-    /// "Best" is the highest item level; ties go to whichever unlocks earliest, then to the lowest
-    /// item id so the answer never depends on the order the inventory happened to be read in.
+    /// A piece only stops being worn once every copy of its slot is filled by something better, so
+    /// it takes <paramref name="capacity"/> of them before the answer is yes. One better ring is no
+    /// argument for parting with a ring: both are on a hand.
     ///
-    /// Taking the maximum rather than the first match is what makes the replacement shown the one a
-    /// player would actually name. The verdict does not depend on it — any candidate at all proves
-    /// the piece is obsolete — but the name and icon are what a human reads to decide.
+    /// The one named is the weakest of those ahead of it, which is the tightest true statement — for
+    /// an ordinary slot that is simply the best piece owned, and for rings it is the second best,
+    /// the one a player needs to see to be convinced. Taking the maximum rather than the first match
+    /// is also what keeps the answer independent of the order the inventory happened to arrive in;
+    /// the verdict never depends on which piece is named, but what a human reads does.
     /// </summary>
-    private static GearFacts? Best(IEnumerable<OwnedPiece> candidates)
+    private static GearFacts? Displacing(IEnumerable<OwnedPiece> candidates, int capacity, GearRanking ranking)
     {
-        GearFacts? champion = null;
-        foreach (var challenger in candidates.Select(c => c.Facts!))
-        {
-            if (champion is null) { champion = challenger; continue; }
-            if (challenger.ItemLevel != champion.ItemLevel)
-            {
-                if (challenger.ItemLevel > champion.ItemLevel) champion = challenger;
-                continue;
-            }
-            if (challenger.EquipLevel != champion.EquipLevel)
-            {
-                if (challenger.EquipLevel < champion.EquipLevel) champion = challenger;
-                continue;
-            }
-            if (challenger.ItemId < champion.ItemId) champion = challenger;
-        }
-        return champion;
+        var ahead = candidates
+            .Select(c => c.Facts!)
+            .OrderBy(f => f, ranking.BestFirst)
+            .Take(capacity)
+            .ToList();
+
+        return ahead.Count < capacity ? null : ahead[^1];
     }
 
     private static JudgedPiece Judge(
@@ -210,6 +218,7 @@ public static class Classifier
             facts,
             jobId,
             jobLevels.TryGetValue(jobId, out var reported) ? reported : null,
+            GearRanking.For(jobId),
             finalVerdict,
             replacedBy,
             reason,
@@ -233,9 +242,10 @@ public static class Classifier
         var facts = piece.Facts;
         return new JudgedPiece(
             piece,
-            facts ?? new GearFacts(piece.ItemId, $"#{piece.ItemId}", piece.Slot, 0, 0, 0, [], false, false, false),
+            facts ?? new GearFacts(piece.ItemId, $"#{piece.ItemId}", piece.Slot, 0, 0, 0, [], 0, 0, false, false, false),
             JobId: 0,
             JobLevel: null,
+            GearRanking.For(0),
             Verdict.NeedsReview,
             ReplacedBy: null,
             facts is null ? ReasonCode.ItemUnknown : ReasonCode.JobUnresolved,

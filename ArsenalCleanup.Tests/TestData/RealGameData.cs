@@ -30,6 +30,7 @@ internal static class RealGameData
     private sealed record ItemEntry(
         uint Id, string Name, string Slot, ushort ItemLevel, byte EquipLevel,
         [property: JsonPropertyName("jobIds")] uint[] JobIds,
+        ushort DefencePhysical, ushort DefenceMagical,
         bool IsRelic, bool IsDesynthesisable, bool IsArmoireEligible);
 
     private sealed record ItemFile(string GameVersion, ItemEntry[] Items);
@@ -61,7 +62,8 @@ internal static class RealGameData
     public static IReadOnlyList<GearFacts> Items { get; } =
         [.. ItemData.Items.Select(i => new GearFacts(
             i.Id, i.Name, i.Slot, i.ItemLevel, i.EquipLevel, IconId: 1,
-            i.JobIds, i.IsRelic, i.IsDesynthesisable, i.IsArmoireEligible))];
+            i.JobIds, i.DefencePhysical, i.DefenceMagical,
+            i.IsRelic, i.IsDesynthesisable, i.IsArmoireEligible))];
 
     /// <summary>
     /// The real forty-three classes, with both abbreviations and the level each actually begins at —

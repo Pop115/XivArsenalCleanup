@@ -232,7 +232,7 @@ public sealed class MainWindow : Window, IDisposable
                     ImGui.SetTooltip("You are wearing this. Take it off before storing, desynthesising or discarding it.");
                 }
             }
-            ImGui.TextDisabled($"item level {piece.Facts.ItemLevel}, wearable from level {piece.Facts.EquipLevel}");
+            ImGui.TextDisabled(Presentation.Specs(piece));
 
             ImGui.TableNextColumn();
             ImGui.TextColored(Presentation.VerdictColour(piece.Verdict), Presentation.VerdictLabel(piece.Verdict));

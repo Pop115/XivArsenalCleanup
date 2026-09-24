@@ -46,8 +46,9 @@ public sealed class PersonaScenarioTests
 
     private static GearFacts Item(
         uint id, string name, string slot, ushort itemLevel, byte equipLevel, uint[] jobs,
-        bool relic = false, bool desynthesisable = false, bool armoire = false) =>
-        new(id, name, slot, itemLevel, equipLevel, IconId: 1, jobs, relic, desynthesisable, armoire);
+        ushort defence = 0, bool relic = false, bool desynthesisable = false, bool armoire = false) =>
+        new(id, name, slot, itemLevel, equipLevel, IconId: 1, jobs, defence, defence,
+            relic, desynthesisable, armoire);
 
     private static OwnedPiece Owns(GearFacts facts, bool worn = false, int position = 0) =>
         new(facts.ItemId, facts.Slot, position, worn, facts);
