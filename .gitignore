@@ -29,3 +29,8 @@ XivEffigy/tests/fixtures/*.glb
 XivEffigy/dist/
 XivEffigy/corpus/
 XivEffigy/.blender/
+
+# XivEureka
+XivEureka/**/bin/
+XivEureka/**/obj/
+XivEureka/**/TestResults/
