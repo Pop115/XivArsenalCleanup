@@ -1,17 +1,10 @@
 name: ArsenalCleanup release
 
 # Cutting a release is a deliberate act: push a tag, get a zip a player can install.
-#
-# The tag is namespaced because this repository can hold more than one project, and an unqualified
-# "v0.4.0" would be ambiguous the moment a second one arrives.
 on:
   push:
     tags:
-      - 'arsenalcleanup-v*'
-
-defaults:
-  run:
-    working-directory: ArsenalCleanup
+      - 'v*'
 
 permissions:
   contents: write
@@ -50,7 +43,7 @@ jobs:
         shell: pwsh
         run: |
           $manifest = Get-Content ArsenalCleanup/bin/Release/ArsenalCleanup/ArsenalCleanup.json | ConvertFrom-Json
-          $tagged = "${{ github.ref_name }}" -replace '^arsenalcleanup-v', ''
+          $tagged = "${{ github.ref_name }}" -replace '^v', ''
           $built = $manifest.AssemblyVersion -replace '\.0$', ''
           if ($tagged -ne $built) {
             throw "Tag says $tagged, the built manifest says $built (from AssemblyVersion $($manifest.AssemblyVersion)). Bump <Version> in the csproj, or retag."

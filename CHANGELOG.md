@@ -1,7 +1,7 @@
 # Changelog
 
 Notable changes, newest first. Versions match the `AssemblyVersion` in the plugin manifest, and a
-release is cut by pushing an `arsenalcleanup-v*` tag.
+release is cut by pushing a `v*` tag.
 
 ## 0.5.0
 

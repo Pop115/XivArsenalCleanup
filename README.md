@@ -1,6 +1,6 @@
 # ArsenalCleanup
 
-[![CI](https://github.com/Pop115/ClaudeGithubWorkspace/actions/workflows/arsenal-cleanup.yml/badge.svg)](https://github.com/Pop115/ClaudeGithubWorkspace/actions/workflows/arsenal-cleanup.yml)
+[![CI](https://github.com/Pop115/XivArsenalCleanup/actions/workflows/arsenal-cleanup.yml/badge.svg)](https://github.com/Pop115/XivArsenalCleanup/actions/workflows/arsenal-cleanup.yml)
 
 A Dalamud plugin that tells you which gear in your Armoury Chest you can stop carrying around.
 
@@ -113,7 +113,7 @@ separate features.
 Not on the official Dalamud plugin repository, so it installs from this one:
 
 1. In game, `/xlsettings` → **Experimental** → **Custom Plugin Repositories**.
-2. Add `https://raw.githubusercontent.com/Pop115/ClaudeGithubWorkspace/main/repo.json` and save.
+2. Add `https://raw.githubusercontent.com/Pop115/XivArsenalCleanup/main/repo.json` and save.
 3. `/xlplugins` → search for **Arsenal Cleanup** → Install.
 
 Updates then arrive the same way as for any other plugin.

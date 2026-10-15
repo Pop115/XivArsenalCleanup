@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: How the triage decides things
-    url: https://github.com/Pop115/ClaudeGithubWorkspace/blob/main/ArsenalCleanup/README.md
+    url: https://github.com/Pop115/XivArsenalCleanup/blob/main/README.md
     about: The README explains each verdict, and why job level and worn gear change the answer. Worth a look before reporting a wrong call.
   - name: Building it yourself
-    url: https://github.com/Pop115/ClaudeGithubWorkspace/blob/main/ArsenalCleanup/CONTRIBUTING.md
+    url: https://github.com/Pop115/XivArsenalCleanup/blob/main/CONTRIBUTING.md
     about: Requirements, the four CI gates, and how the code is arranged.

@@ -15,7 +15,7 @@ lost), then desynthesis (materials back), then discarding. Relics are never sugg
 
 Everything happens in game, from the game's own item data — no companion app, and nothing to keep in
 step with patches. A JSON export is there for anyone wiring it into a tool of their own.</Description>
-    <RepoUrl>https://github.com/Pop115/ClaudeGithubWorkspace</RepoUrl>
+    <RepoUrl>https://github.com/Pop115/XivArsenalCleanup</RepoUrl>
     <Tags>inventory;armoury;cleanup;gear;export</Tags>
   </PropertyGroup>
 </Project>

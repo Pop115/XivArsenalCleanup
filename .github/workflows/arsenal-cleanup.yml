@@ -1,22 +1,11 @@
 name: ArsenalCleanup
 
-# Runs on anything that touches the plugin. The path filter keeps unrelated work in this workspace
-# repo from queueing a Windows runner for no reason.
+# Runs on every push to main and every pull request: the whole repository is the plugin.
 on:
   push:
     branches: [main]
-    paths:
-      - 'ArsenalCleanup/**'
-      - '.github/workflows/arsenal-cleanup.yml'
   pull_request:
-    paths:
-      - 'ArsenalCleanup/**'
-      - '.github/workflows/arsenal-cleanup.yml'
   workflow_dispatch:
-
-defaults:
-  run:
-    working-directory: ArsenalCleanup
 
 jobs:
   build:
@@ -97,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results
-          path: ArsenalCleanup/**/TestResults/**
+          path: '**/TestResults/**'
           if-no-files-found: warn
 
       - name: Upload the built plugin
@@ -105,6 +94,6 @@ jobs:
         with:
           name: ArsenalCleanup
           path: |
-            ArsenalCleanup/ArsenalCleanup/bin/Release/ArsenalCleanup.dll
-            ArsenalCleanup/ArsenalCleanup/bin/Release/ArsenalCleanup.json
+            ArsenalCleanup/bin/Release/ArsenalCleanup.dll
+            ArsenalCleanup/bin/Release/ArsenalCleanup.json
           if-no-files-found: error
