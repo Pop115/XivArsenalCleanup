@@ -3,6 +3,51 @@
 Notable changes, newest first. Versions match the `AssemblyVersion` in the plugin manifest, and a
 release is cut by pushing an `arsenalcleanup-v*` tag.
 
+## 0.5.0
+
+Beastmaster, and two rules the triage had been getting away without.
+
+### Fixed
+
+- **Beastmaster's gear came back as "check yourself", all of it.** The game's ClassJobCategory sheet
+  gained a column for the job; the library this plugin reads sheets with did not gain a name for it,
+  and the column was read by name. So every category answered "no" for Beastmaster: the sixty pieces
+  only that job can wear resolved to no class at all and could be compared against nothing, and
+  every piece shared with another job was judged for that job and never for this one. A class the
+  library has no name for is now read by position instead — the columns run in class order — and
+  that layout is checked against every class that does have a name, on every row of the sheet,
+  before it is trusted. If it ever stops agreeing, the plugin says so in the log and falls back to
+  names rather than inventing equip rights from a column that turned out to be something else.
+- **A single better ring was enough to have you throw a ring away.** A character wears two, so the
+  better one fills the hand it was already filling and the piece it beat is still on the other. A
+  ring is now spare only once two better ones can be worn, and the one named as its replacement is
+  the weaker of those two — the tighter argument, and the one a player can check at a glance. Every
+  other slot holds one piece and is unaffected.
+
+### Added
+
+- **Beastmaster is judged on defence rather than item level.** The game scales a piece's whole stat
+  line from its item level, which makes the highest one best for nearly every job — and picks a
+  flimsier outfit for the one whose content is survived rather than raced. That is also what the
+  game's own "recommended gear" button does there. A piece now replaces another for Beastmaster only
+  when it gives up neither kind of defence and no item level; where the two disagree, the choice is
+  left with the player. Nothing changes for any other job, nor for weapons and plain accessories,
+  which carry no defence to prefer.
+- Verdicts name the yardstick they were reached with, so "replaced by X (defence 182, item level
+  110)" can be checked rather than taken on faith, and the line under a piece follows the same one.
+
+### Tests
+
+- **The gear sample was rebuilt from the live game**, with defence on every piece and Beastmaster's
+  equip rights where the old sample had none — it predated the job. Two real coats in it carry the
+  argument for the whole defence rule: eight item levels apart, and the higher one defends less.
+- **A tool to rebuild it**, which the repository had been missing. `tools/FixtureBuilder` refreshes
+  every id already in the sample and adds any passed on the command line, so a refresh after a patch
+  changes the facts and never the stratification.
+- Two more properties over the generated armouries: nothing is ever called replaced without enough
+  better pieces to fill every copy of its slot, and nothing Beastmaster is told to part with is
+  sturdier than what replaces it.
+
 ## 0.4.0
 
 The plugin stands on its own.

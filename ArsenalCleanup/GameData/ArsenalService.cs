@@ -55,7 +55,7 @@ public sealed class ArsenalService(
             // Read once, then reused: the class list cannot change while the game is running, and
             // building it walks two sheets.
             if (Jobs.Count == 0) Jobs = GameJobs.Read(data);
-            itemFacts ??= new GameItemFacts(data, Jobs);
+            itemFacts ??= new GameItemFacts(data, Jobs, log);
 
             var read = ArmoryReader.CollectPieces(inventory);
             var jobLevels = GameJobs.ReadLevels(playerState, data, Jobs);

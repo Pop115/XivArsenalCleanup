@@ -60,6 +60,34 @@ This plugin only calls a piece replaced when the thing replacing it is one you c
 The same goes for gear you have not grown into yet: it is kept, and labelled with the level that
 will unlock it, rather than lumped in with everything else you are keeping.
 
+## Why two rings matter
+
+Because a character wears two of them, and every other slot holds one.
+
+"Something better exists" is a reason to part with a hat. It is not a reason to part with a ring:
+the better one goes on the hand it was already going on, and the ring it beat is still the one on
+the other hand. So a ring is only spare once *two* better ones can be worn — and when that happens
+the plugin names the weaker of the two, because "even this beats it" is the part worth reading.
+
+## Why Beastmaster is judged on defence
+
+Because item level is a good proxy for "better" and a bad one for "survives".
+
+For nearly every job the game scales a piece's whole stat line from its item level, so the highest
+one wins and nothing else needs saying. Beastmaster's content is survived rather than raced, and
+there the same comparison picks a flimsier outfit with better numbers on it — which is exactly what
+the game's own **recommended gear** button does, and why its answer is worth ignoring there.
+
+So for Beastmaster a piece only replaces another when it gives up neither kind of defence *and* no
+item level. Two pieces that each win on a different count are left for you to choose between, which
+is the honest answer and the one that stops a sturdy coat being flagged for a smarter-looking one.
+Nothing changes for any other job, and nothing changes for weapons or the plainest accessories,
+which carry no defence for the rule to prefer.
+
+Gear only Beastmaster can wear is cleared out on that basis. Gear it shares with the rest of the
+game is kept whenever any class still wants it — the rule already in place — so there the defence
+comparison can only ever protect a piece, never condemn one.
+
 ## Why worn gear matters
 
 Gear on your active job lives in its own container, not in any Armoury tab. A tool that reads only
@@ -135,6 +163,13 @@ distinct physical objects, and only the stored one can be acted on without unequ
 Dalamud's official `IGameInventory` API for what you own, `IDataManager` for the game's item sheets,
 and `IPlayerState` for your job levels. No network capture, no undocumented memory access, nothing
 written outside the folder you choose.
+
+Which classes may wear a piece comes from the game's `ClassJobCategory` sheet, which has one column
+per class. Those columns are normally read by name — and a patch ships a new job before the library
+this plugin reads sheets with has a name for it, which is how Beastmaster's own equipment came out
+as "check yourself" for a patch cycle. Any class without a name is now read by position instead: the
+columns run in class order, and that layout is checked against every class that *does* have a name,
+on every row of the sheet, before it is trusted.
 
 Equipped gear is one flat 14-entry array whose order is the game's own (the same order as
 FFXIVClientStructs' `RaptureGearsetModule.GearsetItemIndex`, from main hand at 0 to soul crystal at

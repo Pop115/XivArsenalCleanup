@@ -16,6 +16,9 @@ internal static class TriageFixtures
     internal const uint Archer = 5;
     internal const uint Bard = 23;
 
+    /// <summary>The limited job judged on defence rather than item level — see <see cref="GearRanking"/>.</summary>
+    internal const uint Beastmaster = KnownJobs.Beastmaster;
+
     internal static GearFacts Facts(
         uint id = 1,
         string name = "Test piece",
@@ -23,10 +26,13 @@ internal static class TriageFixtures
         ushort itemLevel = 1,
         byte equipLevel = 1,
         IReadOnlyList<uint>? jobs = null,
+        ushort defence = 0,
+        ushort magicDefence = 0,
         bool relic = false,
         bool desynthesisable = false,
         bool armoire = false) =>
-        new(id, name, slot, itemLevel, equipLevel, IconId: 1, jobs ?? [Pugilist], relic, desynthesisable, armoire);
+        new(id, name, slot, itemLevel, equipLevel, IconId: 1, jobs ?? [Pugilist],
+            defence, magicDefence == 0 ? defence : magicDefence, relic, desynthesisable, armoire);
 
     internal static OwnedPiece Owned(GearFacts facts, bool equipped = false, int position = 0) =>
         new(facts.ItemId, facts.Slot, position, equipped, facts);

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Deliberately outside ArsenalCleanup.slnx: this tool needs a local installation of the game and
+    can never run on CI, so keeping it out of the solution keeps the build and the format check
+    about the plugin. Run it by path — see README.md.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Lumina reads the game's sheets straight out of sqpack, the same data the plugin sees. -->
+    <PackageReference Include="Lumina" Version="7.3.0" />
+    <PackageReference Include="Lumina.Excel" Version="7.4.3" />
+  </ItemGroup>
+
+</Project>

@@ -12,6 +12,12 @@ namespace ArsenalCleanup.Triage;
 /// <param name="ItemLevel">The item's own level — the yardstick for "better".</param>
 /// <param name="EquipLevel">The character level required to equip it.</param>
 /// <param name="JobIds">Every ClassJob row id that may equip it. Empty when unresolved.</param>
+/// <param name="DefencePhysical">
+/// The piece's own physical defence (<c>Item.DefensePhys</c>), zero on weapons and accessories.
+/// Item level alone cannot stand in for it: two pieces of the same item level made for different
+/// roles defend differently, which is the whole reason Beastmaster is judged on this instead.
+/// </param>
+/// <param name="DefenceMagical">The piece's magical defence (<c>Item.DefenseMag</c>).</param>
 /// <param name="IsRelic">
 /// True for an item from a relic line. Detected from the description opening with a bracketed tag
 /// (`[Manderville Weapon]`), the convention Square Enix has used across every relic era checked —
@@ -28,6 +34,8 @@ public sealed record GearFacts(
     byte EquipLevel,
     ushort IconId,
     IReadOnlyList<uint> JobIds,
+    ushort DefencePhysical,
+    ushort DefenceMagical,
     bool IsRelic,
     bool IsDesynthesisable,
     bool IsArmoireEligible);

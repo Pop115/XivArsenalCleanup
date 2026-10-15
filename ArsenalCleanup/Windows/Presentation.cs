@@ -109,6 +109,10 @@ public static class Presentation
         var who = JobList(piece.RelevantJobs, jobs);
         var replacement = piece.ReplacedBy;
 
+        // How many of this slot are worn at once, which changes what a verdict on one of them
+        // means: with two rings on two hands, "something better exists" is not a reason to let go.
+        var spare = SlotCapacity.For(piece.Facts.Slot) > 1;
+
         var sentence = piece.Reason switch
         {
             ReasonCode.OnlyOneOwned when who.Length > 0 =>
@@ -116,6 +120,12 @@ public static class Presentation
             ReasonCode.OnlyOneOwned =>
                 "The only one you own for this slot.",
 
+            ReasonCode.BestEquippable when spare && who.Length > 0 =>
+                $"Among your best two for this slot, for {who} — and you wear two at once.",
+            ReasonCode.BestEquippable when spare =>
+                "Among your best two for this slot, and you wear two at once.",
+            ReasonCode.BestEquippable when piece.Ranking.Measures == Yardstick.Defence && who.Length > 0 =>
+                $"Your best defence for this slot, for {who}.",
             ReasonCode.BestEquippable when who.Length > 0 =>
                 $"Your best for this slot, for {who}.",
             ReasonCode.BestEquippable =>
@@ -128,11 +138,17 @@ public static class Presentation
             ReasonCode.NotAtLevelYet =>
                 "Keep until the level is reached.",
 
+            ReasonCode.SupersededNow when spare && replacement is not null =>
+                $"You wear two at once and own two better ones already — even {replacement.Name} "
+                + $"({Measured(replacement, piece.Ranking)}) beats this.",
             ReasonCode.SupersededNow when replacement is not null =>
-                $"Replaced by {replacement.Name} (item level {replacement.ItemLevel}), which you can already wear.",
+                $"Replaced by {replacement.Name} ({Measured(replacement, piece.Ranking)}), which you can already wear.",
             ReasonCode.SupersededNow =>
                 "Replaced by something better you can already wear.",
 
+            ReasonCode.OutclassedByEarlier when spare && replacement is not null =>
+                $"You wear two at once, and two better ones unlock no later — {replacement.Name} "
+                + $"among them (level {replacement.EquipLevel}).",
             ReasonCode.OutclassedByEarlier when replacement is not null =>
                 $"Outclassed by {replacement.Name}, which unlocks no later (level {replacement.EquipLevel}).",
             ReasonCode.OutclassedByEarlier =>
@@ -158,6 +174,33 @@ public static class Presentation
             ? $"{sentence} Relic: never disposed of automatically — your call."
             : sentence;
     }
+
+    /// <summary>
+    /// A piece measured by whatever yardstick decided its verdict.
+    ///
+    /// Item level says everything about a piece for nearly every job, and nothing about why a
+    /// Beastmaster should prefer one to another — naming the defence is the difference between an
+    /// answer the player can check and one they have to take on faith. The item level still travels
+    /// with it, because it is what the rest of the game shows.
+    /// </summary>
+    public static string Measured(GearFacts facts, GearRanking ranking) => ranking.Measures switch
+    {
+        Yardstick.Defence when facts.DefencePhysical == facts.DefenceMagical =>
+            $"defence {facts.DefencePhysical}, item level {facts.ItemLevel}",
+        Yardstick.Defence =>
+            $"defence {facts.DefencePhysical} physical and {facts.DefenceMagical} magical, "
+            + $"item level {facts.ItemLevel}",
+        _ => $"item level {facts.ItemLevel}",
+    };
+
+    /// <summary>
+    /// The line under a piece's name: what it is worth, and when it can be worn.
+    ///
+    /// It follows the same yardstick as the verdict above it, so a Beastmaster piece kept for its
+    /// defence does not sit under a number that says nothing about why.
+    /// </summary>
+    public static string Specs(TriagedPiece piece) =>
+        $"{Measured(piece.Facts, piece.Ranking)}, wearable from level {piece.Facts.EquipLevel}";
 
     /// <summary>A last resort for a value with no wording of its own: "soul_crystal" reads as "Soul crystal", never as itself.</summary>
     public static string Humanise(string raw)

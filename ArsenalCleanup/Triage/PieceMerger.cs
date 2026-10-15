@@ -12,6 +12,7 @@ namespace ArsenalCleanup.Triage;
 /// </param>
 /// <param name="RequiredLevel">The level the piece can be worn from, when that is what the verdict hinges on.</param>
 /// <param name="DecidingJobLevel">The level of the job whose judgement was kept.</param>
+/// <param name="Ranking">What "better" meant for the job whose judgement was kept — see <see cref="GearRanking"/>.</param>
 public sealed record TriagedPiece(
     OwnedPiece Piece,
     GearFacts Facts,
@@ -19,6 +20,7 @@ public sealed record TriagedPiece(
     IReadOnlyList<uint> RelevantJobs,
     uint? DecidingJob,
     int? DecidingJobLevel,
+    GearRanking Ranking,
     int? RequiredLevel,
     Verdict Verdict,
     GearFacts? ReplacedBy,
@@ -89,6 +91,7 @@ public static class PieceMerger
                 relevant,
                 representative.JobId == 0 ? null : representative.JobId,
                 representative.JobLevel,
+                representative.Ranking,
                 representative.Facts.EquipLevel,
                 representative.Verdict,
                 representative.ReplacedBy,

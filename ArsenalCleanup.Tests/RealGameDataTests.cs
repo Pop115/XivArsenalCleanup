@@ -1,5 +1,6 @@
 using System.Linq;
 using ArsenalCleanup.Tests.TestData;
+using ArsenalCleanup.Triage;
 using Xunit;
 
 namespace ArsenalCleanup.Tests;
@@ -71,9 +72,80 @@ public sealed class RealGameDataTests
     }
 
     [Fact]
+    public void CoversTheGearOnlyABeastmasterCanWear()
+    {
+        // The sample predates the job, and the bug it is here to guard was invisible without it: a
+        // class the game-data library has no column for reads as "no class at all", and every piece
+        // only that class can wear comes back unexplained.
+        var beastmasterOnly = RealGameData.Items
+            .Where(i => i.JobIds.Count == 1 && i.JobIds[0] == KnownJobs.Beastmaster)
+            .ToList();
+
+        Assert.True(beastmasterOnly.Count >= 10, $"only {beastmasterOnly.Count} Beastmaster-only pieces");
+        Assert.Contains(beastmasterOnly, i => i.Slot == "main");
+        Assert.Contains(beastmasterOnly, i => i.Slot == "body");
+        Assert.Contains(beastmasterOnly, i => i.Slot == "soul_crystal");
+
+        // And gear it shares with everyone else, which is most of what a player actually owns.
+        Assert.True(
+            RealGameData.Items.Count(i => i.JobIds.Contains(KnownJobs.Beastmaster)) >= 100,
+            "too little shared gear flagged for Beastmaster");
+    }
+
+    [Fact]
+    public void CarriesRealDefence_NotZeroes()
+    {
+        // A sample of zeroes would leave the defence rule technically exercised and actually untested.
+        Assert.True(
+            RealGameData.Items.Count(i => i.DefencePhysical > 0) >= 100,
+            "too few pieces with any defence at all");
+        Assert.Contains(RealGameData.Items, i => i.DefencePhysical != i.DefenceMagical);
+
+        // No weapon defends at all, and an accessory barely does — a point or two, where a body
+        // piece of the same era carries fifty. It is armour the defence rule is really about.
+        Assert.All(RealGameData.Items.Where(i => i.Slot == "main"), i => Assert.Equal(0, i.DefencePhysical));
+        Assert.All(RealGameData.Items.Where(i => i.Slot == "ring"), i => Assert.True(i.DefencePhysical <= 1));
+        Assert.Contains(RealGameData.Items, i => i.Slot == "body" && i.DefencePhysical >= 50);
+    }
+
+    [Fact]
+    public void KeepsThePairWhereItemLevelAndDefenceDisagree()
+    {
+        // The whole argument for judging a Beastmaster on defence, in two real coats: eight item
+        // levels apart, and the higher one defends less. Invent fixtures and you never write this
+        // down; the game ships it.
+        var sturdy = RealGameData.Item(3009);
+        var flimsy = RealGameData.Item(3076);
+
+        Assert.True(flimsy.ItemLevel > sturdy.ItemLevel, "the sample no longer holds the item level inversion");
+        Assert.True(flimsy.DefencePhysical < sturdy.DefencePhysical, "the sample no longer holds the defence inversion");
+        Assert.Contains(KnownJobs.Beastmaster, sturdy.JobIds);
+        Assert.Contains(KnownJobs.Beastmaster, flimsy.JobIds);
+    }
+
+    [Fact]
+    public void CarriesEnoughRingsToFillBothHandsSeveralTimesOver()
+    {
+        // Three rings a single class can wear is the smallest armoury in which the second-best one
+        // still matters, and the property tests need more than one such class to stumble onto it.
+        var rings = RealGameData.Items.Where(i => i.Slot == "ring").ToList();
+
+        Assert.True(rings.Count >= 10, $"only {rings.Count} rings in the sample");
+        Assert.True(
+            rings.Count(i => i.JobIds.Contains(KnownJobs.Beastmaster)) >= 3,
+            "too few rings a Beastmaster can wear");
+    }
+
+    [Fact]
     public void KnowsTheRealClassesAndWhereTheyBegin()
     {
         Assert.Equal(43, RealGameData.Jobs.Count);
+
+        // Beastmaster is a class like any other as far as the triage is concerned; what makes it
+        // awkward is the game-data library, not the game.
+        var beastmaster = RealGameData.Jobs.Jobs.Single(j => j.Id == KnownJobs.Beastmaster);
+        Assert.Equal("BST", beastmaster.LookupAbbreviation);
+        Assert.Equal(1, beastmaster.StartingLevel);
 
         var gunbreaker = RealGameData.Jobs.Jobs.Single(j => j.LookupAbbreviation == "GNB");
         Assert.Equal(60, gunbreaker.StartingLevel);
